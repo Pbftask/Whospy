@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Who's the Spy | Realtime Multiplayer</title>
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<!-- Google Font -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Confetti -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+<style>
+/* =====================================================================
+   WHO'S THE SPY — STYLE SHEET
+   Tema: Dark Mode + Glassmorphism, animasi halus, responsive HP & PC
+   ===================================================================== */
+:root{
+  --bg-1:#0b0b16;
+  --bg-2:#1a1330;
+  --bg-3:#241a3d;
+  --glass:rgba(255,255,255,.06);
+  --glass-strong:rgba(255,255,255,.10);
+  --border:rgba(255,255,255,.14);
+  --text:#f4f2ff;
+  --text-dim:#a9a3c4;
+  --accent1:#8b5cf6;
+  --accent2:#ec4899;
+  --accent3:#22d3ee;
+  --good:#34d399;
+  --bad:#f87171;
+  --warn:#fbbf24;
+  --radius:20px;
+  --radius-sm:12px;
+  --shadow:0 8px 32px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  margin:0;
+  font-family:'Poppins',system-ui,sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 15% 20%, rgba(139,92,246,.25), transparent 45%),
+    radial-gradient(circle at 85% 10%, rgba(236,72,153,.20), transparent 40%),
+    radial-gradient(circle at 50% 90%, rgba(34,211,238,.15), transparent 45%),
+    linear-gradient(160deg,var(--bg-1),var(--bg-2) 55%,var(--bg-3));
+  background-attachment:fixed;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+/* animated floating blobs for ambience */
+.bg-blob{position:fixed; border-radius:50%; filter:blur(80px); opacity:.35; z-index:-1; animation:float 14s ease-in-out infinite;}
+.bg-blob.b1{width:340px;height:340px; background:var(--accent1); top:-100px; left:-100px;}
+.bg-blob.b2{width:300px;height:300px; background:var(--accent2); bottom:-80px; right:-80px; animation-delay:3s;}
+.bg-blob.b3{width:260px;height:260px; background:var(--accent3); top:40%; right:10%; animation-delay:6s;}
+@keyframes float{0%,100%{transform:translateY(0) translateX(0);}50%{transform:translateY(-30px) translateX(20px);}}
+
+.app{max-width:1200px; margin:0 auto; padding:20px; min-height:100vh; display:flex; flex-direction:column;}
+
+/* ---------- Glass card ---------- */
+.card{
+  background:var(--glass);
+  backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:24px;
+}
+.card-sm{border-radius:var(--radius-sm); padding:16px;}
+
+/* ---------- Buttons ---------- */
+button{font-family:inherit; cursor:pointer;}
+.btn{
+  border:none; border-radius:14px; padding:13px 22px; font-weight:600; font-size:15px;
+  color:#fff; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+  background:linear-gradient(135deg,var(--accent1),var(--accent2));
+  box-shadow:0 6px 20px rgba(139,92,246,.35);
+}
+.btn:hover{transform:translateY(-2px); box-shadow:0 10px 26px rgba(139,92,246,.45);}
+.btn:active{transform:translateY(0) scale(.98);}
+.btn:disabled{opacity:.45; cursor:not-allowed; transform:none; box-shadow:none;}
+.btn.secondary{background:var(--glass-strong); box-shadow:none; border:1px solid var(--border);}
+.btn.danger{background:linear-gradient(135deg,#f87171,#ef4444);}
+.btn.ghost{background:transparent; border:1px solid var(--border); box-shadow:none;}
+.btn.block{width:100%;}
+.btn.sm{padding:9px 14px; font-size:13px; border-radius:10px;}
+
+/* ---------- Inputs ---------- */
+.field{margin-bottom:14px;}
+.field label{display:block; font-size:13px; color:var(--text-dim); margin-bottom:6px; font-weight:500;}
+.input, select{
+  width:100%; padding:13px 14px; border-radius:12px; border:1px solid var(--border);
+  background:rgba(255,255,255,.05); color:var(--text); font-size:15px; font-family:inherit;
+  outline:none; transition:border-color .15s, background .15s;
+}
+.input:focus, select:focus{border-color:var(--accent1); background:rgba(255,255,255,.09);}
+.input-icon-wrap{position:relative;}
+.input-icon-wrap i{position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-dim);}
+.input-icon-wrap .input{padding-left:40px;}
+select{appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a9a3c4' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center;}
+
+/* ---------- Screens ---------- */
+.screen{display:none; flex:1; flex-direction:column; animation:fadein .4s ease;}
+.screen.active{display:flex;}
+@keyframes fadein{from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:translateY(0);}}
+
+.brand{display:flex; align-items:center; justify-content:center; gap:12px; margin:10px 0 26px;}
+.brand i{font-size:30px; background:linear-gradient(135deg,var(--accent1),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+.brand h1{font-size:26px; margin:0; font-weight:800; letter-spacing:.3px;}
+.brand .sub{color:var(--text-dim); font-size:13px; text-align:center; margin-top:-18px; margin-bottom:22px;}
+
+.center-wrap{flex:1; display:flex; align-items:center; justify-content:center; padding:10px;}
+.narrow{width:100%; max-width:420px;}
+
+.tabs{display:flex; gap:8px; margin-bottom:18px; background:rgba(255,255,255,.04); padding:5px; border-radius:14px;}
+.tabs button{flex:1; padding:10px; border:none; border-radius:10px; background:transparent; color:var(--text-dim); font-weight:600; transition:.2s;}
+.tabs button.active{background:linear-gradient(135deg,var(--accent1),var(--accent2)); color:#fff;}
+
+.error-msg{color:var(--bad); font-size:13px; margin-top:8px; min-height:16px;}
+.hint{color:var(--text-dim); font-size:12px; margin-top:10px; text-align:center;}
+.hint a{color:var(--accent3); cursor:pointer; text-decoration:underline;}
+
+/* ---------- Lobby chooser ---------- */
+.choice-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:6px;}
+.choice-grid.cols-3{grid-template-columns:1fr 1fr 1fr;}
+@media (max-width:700px){.choice-grid.cols-3{grid-template-columns:1fr 1fr;}}
+.choice-card{padding:22px 14px; text-align:center; border-radius:16px; border:1px solid var(--border); background:rgba(255,255,255,.04); transition:.2s;}
+.choice-card:hover{background:rgba(255,255,255,.08); transform:translateY(-3px);}
+.choice-card i{font-size:26px; margin-bottom:8px; display:block; color:var(--accent3);}
+.choice-card b{font-size:14px;}
+@media (max-width:480px){.choice-grid{grid-template-columns:1fr;}}
+
+/* ---------- Room header ---------- */
+.room-header{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:18px;}
+.room-code-box{display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.05); padding:10px 16px; border-radius:14px; border:1px solid var(--border);}
+.room-code-box .code{font-size:22px; font-weight:800; letter-spacing:4px; color:var(--accent3);}
+.top-actions{display:flex; gap:8px;}
+
+/* ---------- Player grid / list ---------- */
+.player-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; margin-top:14px;}
+.player-card{
+  position:relative; border-radius:16px; padding:14px 10px; text-align:center;
+  background:rgba(255,255,255,.045); border:1px solid var(--border); transition:.25s;
+}
+.player-card.me{border-color:var(--accent1);}
+.player-card.turn{border-color:var(--accent3); box-shadow:0 0 0 3px rgba(34,211,238,.25); animation:pulse 1.4s infinite;}
+.player-card.selectable{cursor:pointer;}
+.player-card.selectable:hover{background:rgba(255,255,255,.09); transform:translateY(-2px);}
+.player-card.voted-for{border-color:var(--accent2); box-shadow:0 0 0 3px rgba(236,72,153,.25);}
+.player-card.eliminated{opacity:.4; filter:grayscale(1);}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(34,211,238,.25);}50%{box-shadow:0 0 0 7px rgba(34,211,238,.08);}}
+.avatar{
+  width:54px; height:54px; border-radius:50%; margin:0 auto 8px; display:flex; align-items:center; justify-content:center;
+  font-weight:700; font-size:18px; color:#fff;
+  background:linear-gradient(135deg,var(--accent1),var(--accent3));
+}
+.player-name{font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.player-tags{display:flex; gap:4px; justify-content:center; margin-top:5px; flex-wrap:wrap;}
+.tag{font-size:10px; padding:2px 7px; border-radius:8px; font-weight:700;}
+.tag.host{background:rgba(251,191,36,.18); color:var(--warn);}
+.tag.online{background:rgba(52,211,153,.18); color:var(--good);}
+.tag.offline{background:rgba(248,113,113,.18); color:var(--bad);}
+.status-dot{width:9px; height:9px; border-radius:50%; position:absolute; top:10px; right:10px; box-shadow:0 0 0 2px rgba(0,0,0,.3);}
+.status-dot.online{background:var(--good);}
+.status-dot.offline{background:var(--bad);}
+.vote-count-badge{position:absolute; top:-8px; left:50%; transform:translateX(-50%); background:var(--accent2); border-radius:10px; padding:1px 8px; font-size:11px; font-weight:800;}
+
+/* ---------- Section title ---------- */
+.section-title{display:flex; align-items:center; gap:8px; font-weight:700; font-size:15px; margin:22px 0 4px; color:var(--text);}
+.section-title i{color:var(--accent3);}
+
+/* ---------- Timer ---------- */
+.timer-wrap{margin:10px 0 4px;}
+.timer-bar-bg{width:100%; height:9px; border-radius:6px; background:rgba(255,255,255,.08); overflow:hidden;}
+.timer-bar{height:100%; border-radius:6px; background:linear-gradient(90deg,var(--accent3),var(--accent1)); transition:width 1s linear;}
+.timer-label{display:flex; justify-content:space-between; font-size:12px; color:var(--text-dim); margin-top:5px;}
+
+/* ---------- Game phase banner ---------- */
+.phase-banner{display:flex; align-items:center; gap:10px; padding:12px 18px; border-radius:16px; background:var(--glass-strong); border:1px solid var(--border); margin-bottom:16px;}
+.phase-banner i{font-size:20px; color:var(--accent3);}
+.phase-banner .ttl{font-weight:700; font-size:15px;}
+.phase-banner .desc{font-size:12px; color:var(--text-dim);}
+
+/* ---------- Clue input area ---------- */
+.clue-box{display:flex; gap:10px; margin-top:12px;}
+.clue-box .input{flex:1;}
+
+/* ---------- History ---------- */
+.history-list{display:flex; flex-direction:column; gap:8px; margin-top:8px; max-height:260px; overflow-y:auto; padding-right:4px;}
+.history-item{display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:12px; background:rgba(255,255,255,.04); border:1px solid var(--border); font-size:13px;}
+.history-item .who{font-weight:700; color:var(--accent3); min-width:70px;}
+.history-item .clue-text{color:var(--text);}
+.history-list::-webkit-scrollbar{width:6px;}
+.history-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15); border-radius:6px;}
+
+/* ---------- Modal / popup ---------- */
+.modal-overlay{position:fixed; inset:0; background:rgba(5,3,15,.72); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; animation:fadein .25s ease;}
+.modal-overlay.active{display:flex;}
+.modal-card{max-width:420px; width:100%; text-align:center; animation:pop .3s cubic-bezier(.2,1.4,.4,1);}
+@keyframes pop{from{transform:scale(.85); opacity:0;} to{transform:scale(1); opacity:1;}}
+.secret-word-card{
+  margin:18px 0; padding:26px 16px; border-radius:18px;
+  background:linear-gradient(135deg,rgba(139,92,246,.22),rgba(236,72,153,.16));
+  border:1px solid var(--border);
+}
+.secret-word-card.spy{background:linear-gradient(135deg,rgba(248,113,113,.25),rgba(251,191,36,.15));}
+.secret-word-card .role{font-size:12px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;}
+.secret-word-card .word{font-size:30px; font-weight:800;}
+.secret-word-card .cat{font-size:12px; color:var(--text-dim); margin-top:8px;}
+
+/* ---------- Toast ---------- */
+#toast-container{position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:200; display:flex; flex-direction:column; gap:8px; width:min(90vw,380px);}
+.toast{padding:12px 16px; border-radius:12px; background:rgba(20,16,35,.92); border:1px solid var(--border); font-size:13px; display:flex; align-items:center; gap:10px; box-shadow:var(--shadow); animation:slideDown .3s ease;}
+.toast i{color:var(--accent3);}
+.toast.err i{color:var(--bad);}
+.toast.ok i{color:var(--good);}
+@keyframes slideDown{from{transform:translateY(-16px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+
+/* ---------- Loading overlay ---------- */
+#loading-overlay{position:fixed; inset:0; background:rgba(6,4,16,.85); z-index:300; display:none; align-items:center; justify-content:center; flex-direction:column; gap:14px;}
+#loading-overlay.active{display:flex;}
+.spinner{width:46px; height:46px; border-radius:50%; border:4px solid rgba(255,255,255,.12); border-top-color:var(--accent3); animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ---------- Result screen ---------- */
+.result-hero{text-align:center; padding:30px 10px;}
+.result-hero i{font-size:56px; margin-bottom:10px; display:block;}
+.result-hero.win i{color:var(--good);}
+.result-hero.lose i{color:var(--bad);}
+.result-hero h2{margin:6px 0; font-size:26px;}
+.result-hero p{color:var(--text-dim); font-size:14px;}
+
+.two-col{display:grid; grid-template-columns:1.4fr 1fr; gap:18px;}
+@media (max-width:820px){.two-col{grid-template-columns:1fr;}}
+
+.badge-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+.chip{padding:6px 12px; border-radius:20px; font-size:12px; background:rgba(255,255,255,.06); border:1px solid var(--border); display:flex; align-items:center; gap:6px;}
+
+.footer-note{text-align:center; color:var(--text-dim); font-size:11px; margin-top:24px; padding-bottom:10px;}
+
+::-webkit-scrollbar{width:8px; height:8px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12); border-radius:6px;}
+
+.spy-guess-input{margin-top:14px;}
+.waiting-dots::after{content:''; animation:dots 1.4s steps(4,end) infinite;}
+@keyframes dots{0%{content:'';}25%{content:'.';}50%{content:'..';}75%{content:'...';}100%{content:'';}}
+
+.small-muted{color:var(--text-dim); font-size:12px;}
+.divider{height:1px; background:var(--border); margin:16px 0;}
+
+/* switch */
+.switch-row{display:flex; align-items:center; justify-content:space-between; padding:10px 0;}
+.switch{position:relative; width:46px; height:26px; flex-shrink:0;}
+.switch input{opacity:0; width:0; height:0;}
+.switch .slider{position:absolute; inset:0; background:rgba(255,255,255,.15); border-radius:20px; transition:.2s; cursor:pointer;}
+.switch .slider::before{content:''; position:absolute; width:20px; height:20px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s;}
+.switch input:checked + .slider{background:linear-gradient(135deg,var(--accent1),var(--accent2));}
+.switch input:checked + .slider::before{transform:translateX(20px);}
+
+@media (max-width:600px){
+  .app{padding:12px;}
+  .card{padding:16px; border-radius:16px;}
+  .brand h1{font-size:21px;}
+  .room-code-box .code{font-size:18px; letter-spacing:2px;}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-blob b1"></div>
+<div class="bg-blob b2"></div>
+<div class="bg-blob b3"></div>
+
+<div id="toast-container"></div>
+<div id="loading-overlay"><div class="spinner"></div><div class="small-muted">Memuat<span class="waiting-dots"></span></div></div>
+
+<div class="app">
+
+  <div class="brand">
+    <i class="fa-solid fa-user-secret"></i>
+    <h1>Who's the Spy</h1>
+  </div>
+
+  <!-- ============================================================ AUTH SCREEN ============================================================ -->
+  <section id="screen-auth" class="screen active">
+    <div class="center-wrap">
+      <div class="card narrow">
+        <div class="tabs">
+          <button id="tab-login" class="active" onclick="switchAuthTab('login')"><i class="fa-solid fa-right-to-bracket"></i> Masuk</button>
+          <button id="tab-register" onclick="switchAuthTab('register')"><i class="fa-solid fa-user-plus"></i> Daftar</button>
+        </div>
+
+        <div id="form-login">
+          <div class="field">
+            <label>Email</label>
+            <div class="input-icon-wrap"><i class="fa-solid fa-envelope"></i><input type="email" id="login-email" class="input" placeholder="nama@email.com"></div>
+          </div>
+          <div class="field">
+            <label>Kata Sandi</label>
+            <div class="input-icon-wrap"><i class="fa-solid fa-lock"></i><input type="password" id="login-pass" class="input" placeholder="••••••••"></div>
+          </div>
+          <button class="btn block" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Masuk</button>
+          <div class="error-msg" id="login-error"></div>
+        </div>
+
+        <div id="form-register" style="display:none;">
+          <div class="field">
+            <label>Nama Panggilan</label>
+            <div class="input-icon-wrap"><i class="fa-solid fa-id-badge"></i><input type="text" id="reg-name" class="input" placeholder="Nama kamu di game" maxlength="16"></div>
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <div class="input-icon-wrap"><i class="fa-solid fa-envelope"></i><input type="email" id="reg-email" class="input" placeholder="nama@email.com"></div>
+          </div>
+          <div class="field">
+            <label>Kata Sandi</label>
+            <div class="input-icon-wrap"><i class="fa-solid fa-lock"></i><input type="password" id="reg-pass" class="input" placeholder="Minimal 6 karakter"></div>
+          </div>
+          <button class="btn block" onclick="doRegister()"><i class="fa-solid fa-user-plus"></i> Daftar &amp; Masuk</button>
+          <div class="error-msg" id="register-error"></div>
+        </div>
+
+        <div class="hint">Dengan masuk kamu setuju bermain jujur & seru 🎉</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ LOBBY (create/join) ============================================================ -->
+  <section id="screen-lobby" class="screen">
+    <div class="room-header">
+      <div class="small-muted">Halo, <b id="lobby-username" style="color:var(--text)"></b> 👋</div>
+      <button class="btn ghost sm" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button>
+    </div>
+    <div class="center-wrap">
+      <div class="card narrow">
+        <div class="section-title" style="margin-top:0"><i class="fa-solid fa-gamepad"></i> Mulai Bermain</div>
+        <div class="choice-grid cols-3">
+          <div class="choice-card" onclick="showCreatePanel()"><i class="fa-solid fa-plus"></i><b>Buat Room</b><div class="small-muted">Jadi host permainan</div></div>
+          <div class="choice-card" onclick="showJoinPanel()"><i class="fa-solid fa-right-to-bracket"></i><b>Gabung Room</b><div class="small-muted">Masukkan kode</div></div>
+          <div class="choice-card" onclick="showQuickMatchPanel()"><i class="fa-solid fa-shuffle"></i><b>Main Random</b><div class="small-muted">Matchmaking otomatis</div></div>
+        </div>
+
+        <div id="create-panel" style="display:none; margin-top:18px;">
+          <div class="divider"></div>
+          <div class="field">
+            <label>Kategori Kata</label>
+            <select id="create-category" class="input"></select>
+          </div>
+          <div class="switch-row">
+            <div><b style="font-size:14px;">Mode Blank Card</b><div class="small-muted">Spy tidak dapat kata sama sekali</div></div>
+            <label class="switch"><input type="checkbox" id="create-blank"><span class="slider"></span></label>
+          </div>
+          <button class="btn block" onclick="createRoomFlow()"><i class="fa-solid fa-play"></i> Buat Room</button>
+          <div class="error-msg" id="create-error"></div>
+        </div>
+
+        <div id="join-panel" style="display:none; margin-top:18px;">
+          <div class="divider"></div>
+          <div class="field">
+            <label>Kode Room (6 karakter)</label>
+            <div class="input-icon-wrap"><i class="fa-solid fa-hashtag"></i><input type="text" id="join-code" class="input" placeholder="Contoh: A1B2C3" maxlength="6" style="text-transform:uppercase; letter-spacing:3px; font-weight:700;"></div>
+          </div>
+          <button class="btn block" onclick="joinRoomFlow()"><i class="fa-solid fa-right-to-bracket"></i> Gabung</button>
+          <div class="error-msg" id="join-error"></div>
+        </div>
+
+        <div id="quickmatch-panel" style="display:none; margin-top:18px;">
+          <div class="divider"></div>
+          <div id="quickmatch-idle" style="text-align:center;">
+            <i class="fa-solid fa-dice" style="font-size:30px; color:var(--accent3); margin-bottom:8px; display:block;"></i>
+            <p class="small-muted">Sistem akan mencocokkan kamu dengan pemain lain secara otomatis. Room otomatis dibuat &amp; permainan dimulai begitu pemain cukup (min 4 orang).</p>
+            <button class="btn block" onclick="startQuickMatch()"><i class="fa-solid fa-shuffle"></i> Cari Pemain Sekarang</button>
+          </div>
+          <div id="quickmatch-searching" style="display:none; text-align:center;">
+            <div class="spinner" style="margin:8px auto;"></div>
+            <p style="font-weight:600; margin-bottom:2px;">Mencari pemain<span class="waiting-dots"></span></p>
+            <p class="small-muted" id="quickmatch-queue-text">0 pemain dalam antrean (min 4)</p>
+            <button class="btn danger block" onclick="cancelQuickMatch()" style="margin-top:10px;"><i class="fa-solid fa-xmark"></i> Batalkan Pencarian</button>
+          </div>
+          <div class="error-msg" id="quickmatch-error"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ ROOM / WAITING SCREEN ============================================================ -->
+  <section id="screen-room" class="screen">
+    <div class="room-header">
+      <div class="room-code-box">
+        <i class="fa-solid fa-door-open"></i>
+        <div>
+          <div class="small-muted" style="font-size:11px;">KODE ROOM</div>
+          <div class="code" id="room-code-display">------</div>
+        </div>
+        <button class="btn ghost sm" onclick="copyRoomCode()" title="Salin kode"><i class="fa-solid fa-copy"></i></button>
+      </div>
+      <div class="top-actions">
+        <span class="chip" id="room-quickmatch-chip" style="display:none;"><i class="fa-solid fa-shuffle"></i> Quick Match</span>
+        <span class="chip"><i class="fa-solid fa-users"></i> <span id="room-player-count">0</span>/<span id="room-max-count">12</span></span>
+        <button class="btn danger sm" onclick="leaveRoomFlow()"><i class="fa-solid fa-door-closed"></i> Keluar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title" style="margin-top:0"><i class="fa-solid fa-users"></i> Pemain di Room</div>
+      <div id="room-player-grid" class="player-grid"></div>
+
+      <div id="quickmatch-countdown-wrap" style="display:none; text-align:center; margin-top:14px;">
+        <span class="chip"><i class="fa-solid fa-clock"></i> Auto mulai dalam <b id="quickmatch-countdown-text" style="margin-left:4px;">--</b></span>
+      </div>
+
+      <div id="host-controls" style="display:none;">
+        <div class="divider"></div>
+        <div class="section-title" style="margin-top:0"><i class="fa-solid fa-sliders"></i> Pengaturan Host</div>
+        <div class="field">
+          <label>Kategori Kata</label>
+          <select id="room-category" class="input" onchange="hostUpdateSetting()"></select>
+        </div>
+        <div class="switch-row">
+          <div><b style="font-size:14px;">Mode Blank Card</b><div class="small-muted">Spy tidak dapat kata sama sekali</div></div>
+          <label class="switch"><input type="checkbox" id="room-blank" onchange="hostUpdateSetting()"><span class="slider"></span></label>
+        </div>
+        <button class="btn block" id="btn-start-game" onclick="hostStartGame()" style="margin-top:12px;"><i class="fa-solid fa-play"></i> Mulai Permainan</button>
+        <div class="small-muted" style="text-align:center; margin-top:8px;">Minimal 4 pemain untuk memulai</div>
+      </div>
+      <div id="guest-waiting" class="small-muted" style="text-align:center; margin-top:16px;">
+        <i class="fa-solid fa-hourglass-half"></i> Menunggu host memulai permainan<span class="waiting-dots"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ GAME SCREEN ============================================================ -->
+  <section id="screen-game" class="screen">
+    <div class="room-header">
+      <div class="room-code-box">
+        <i class="fa-solid fa-hashtag"></i>
+        <div><div class="small-muted" style="font-size:11px;">ROOM</div><div class="code" id="game-room-code" style="font-size:16px; letter-spacing:2px;">------</div></div>
+      </div>
+      <div class="top-actions">
+        <span class="chip"><i class="fa-solid fa-flag-checkered"></i> Ronde <span id="game-round-no">1</span></span>
+        <button class="btn ghost sm" onclick="openMyWordModal()"><i class="fa-solid fa-eye"></i> Kata Saya</button>
+        <button class="btn danger sm" onclick="leaveRoomFlow()"><i class="fa-solid fa-door-closed"></i></button>
+      </div>
+    </div>
+
+    <div id="phase-banner" class="phase-banner">
+      <i class="fa-solid fa-comments"></i>
+      <div><div class="ttl" id="phase-title">Fase Petunjuk</div><div class="desc" id="phase-desc">Pemain memberi petunjuk secara bergiliran</div></div>
+    </div>
+
+    <div class="timer-wrap">
+      <div class="timer-bar-bg"><div class="timer-bar" id="timer-bar" style="width:100%"></div></div>
+      <div class="timer-label"><span id="timer-text">--</span><span id="timer-phase-name"></span></div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div id="clue-phase-panel">
+          <div class="section-title" style="margin-top:0"><i class="fa-solid fa-users"></i> Pemain</div>
+          <div id="game-player-grid" class="player-grid"></div>
+
+          <div id="my-clue-input-wrap" style="display:none;">
+            <div class="section-title"><i class="fa-solid fa-microphone"></i> Giliran Kamu!</div>
+            <div class="clue-box">
+              <input type="text" id="clue-input" class="input" placeholder="Ketik petunjuk singkat kamu..." maxlength="40">
+              <button class="btn" onclick="submitMyClue()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div id="voting-phase-panel" style="display:none;">
+          <div class="section-title" style="margin-top:0"><i class="fa-solid fa-check-to-slot"></i> Pilih siapa yang menurutmu SPY</div>
+          <div id="voting-player-grid" class="player-grid"></div>
+          <div class="small-muted" style="text-align:center; margin-top:12px;" id="voting-status-text">0 dari 0 pemain sudah voting</div>
+        </div>
+
+        <div id="reveal-phase-panel" style="display:none; text-align:center; padding:10px;">
+          <i class="fa-solid fa-gavel" style="font-size:40px; color:var(--accent3); margin-bottom:10px;"></i>
+          <h3 id="reveal-title">Hasil Voting</h3>
+          <p class="small-muted" id="reveal-desc"></p>
+        </div>
+
+        <div id="spyguess-phase-panel" style="display:none; text-align:center; padding:10px;">
+          <i class="fa-solid fa-user-secret" style="font-size:40px; color:var(--warn); margin-bottom:10px;"></i>
+          <h3>Spy Tertangkap!</h3>
+          <p class="small-muted" id="spyguess-desc">Spy diberi 1 kesempatan menebak kata asli.</p>
+          <div id="spyguess-input-area" style="display:none;" class="spy-guess-input">
+            <div class="clue-box">
+              <input type="text" id="spy-guess-input" class="input" placeholder="Tebak kata warga...">
+              <button class="btn" onclick="submitSpyGuess()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div id="result-phase-panel" style="display:none;">
+          <div class="result-hero" id="result-hero">
+            <i class="fa-solid fa-trophy"></i>
+            <h2 id="result-title">Pemenang</h2>
+            <p id="result-desc"></p>
+          </div>
+          <div class="badge-row" id="result-word-badges" style="justify-content:center;"></div>
+          <div id="host-next-round-wrap" style="display:none; text-align:center; margin-top:18px;">
+            <button class="btn" onclick="hostBackToLobby()"><i class="fa-solid fa-rotate-right"></i> Main Lagi</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title" style="margin-top:0"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Petunjuk</div>
+        <div id="history-list" class="history-list">
+          <div class="small-muted" style="text-align:center; padding:14px 0;">Belum ada petunjuk</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-note">Who's the Spy — Realtime Sync</div>
+  </section>
+
+</div>
+
+<!-- ============================================================ SECRET WORD MODAL ============================================================ -->
+<div class="modal-overlay" id="modal-word">
+  <div class="card modal-card">
+    <i class="fa-solid fa-envelope-open-text" style="font-size:30px; color:var(--accent3);"></i>
+    <h3 style="margin:10px 0 0;">Kata Rahasia Kamu</h3>
+    <div id="secret-word-card" class="secret-word-card">
+      <div class="role" id="secret-role">WARGA</div>
+      <div class="word" id="secret-word">-</div>
+      <div class="cat" id="secret-cat">Kategori: -</div>
+    </div>
+    <p class="small-muted">Jangan sampai pemain lain tahu kata kamu 🤫</p>
+    <button class="btn block" onclick="closeWordModal()"><i class="fa-solid fa-check"></i> Siap!</button>
+  </div>
+</div>
+
+<script type="module">
+/* =====================================================================================================
+   WHO'S THE SPY — LOGIC (Firebase v10 modular: Auth + Firestore + Realtime Database)
+   =====================================================================================================
+   CARA SETUP:
+   1. Buat project di https://console.firebase.google.com
+   2. Aktifkan Authentication > Sign-in method > Email/Password
+   3. Aktifkan Firestore Database (mode production) & Realtime Database
+   4. Copy config project kamu ke variabel `firebaseConfig` di bawah ini
+   5. Pasang security rules yang disarankan di bagian bawah file ini (lihat komentar RULES REFERENCE)
+   ===================================================================================================== */
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  onAuthStateChanged, signOut, updateProfile
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot,
+  serverTimestamp, deleteField, collection, runTransaction
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getDatabase, ref, set, onValue, onDisconnect, remove, get, serverTimestamp as rtdbServerTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// >>> GANTI DENGAN KONFIGURASI FIREBASE PROJECT KAMU <<<
+const firebaseConfig = {
+  apiKey: "AIzaSyAX5jvS8WHddftbjWkFHOdYTYvgXImr9BE",
+  authDomain: "whosthespy-2e703.firebaseapp.com",
+  databaseURL: "https://whosthespy-2e703-default-rtdb.firebaseio.com",
+  projectId: "whosthespy-2e703",
+  storageBucket: "whosthespy-2e703.firebasestorage.app",
+  messagingSenderId: "1020064464211",
+  appId: "1:1020064464211:web:cd3286fdb8201c3661b5a6"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const rtdb = getDatabase(app);
+
+/* ======================= BANK KATA (per kategori: [warga, spy]) ======================= */
+const WORD_BANK = {
+  "Hewan": [["Kucing","Harimau"],["Anjing","Serigala"],["Gajah","Badak"],["Ayam","Elang"],["Ikan Mas","Hiu"],["Kelinci","Tikus"],["Sapi","Kerbau"],["Kupu-kupu","Lebah"]],
+  "Makanan": [["Nasi Goreng","Mi Goreng"],["Sate Ayam","Sate Kambing"],["Bakso","Siomay"],["Rendang","Semur"],["Soto","Sop"],["Pizza","Kebab"],["Donat","Roti"],["Es Krim","Es Cendol"]],
+  "Negara": [["Indonesia","Malaysia"],["Jepang","Korea Selatan"],["Prancis","Italia"],["Brazil","Argentina"],["Mesir","Maroko"],["Kanada","Amerika Serikat"],["India","Pakistan"],["Belanda","Belgia"]],
+  "Kendaraan": [["Mobil","Truk"],["Motor","Sepeda"],["Pesawat","Helikopter"],["Kapal Laut","Kapal Selam"],["Kereta Api","MRT"],["Bus","Angkot"],["Becak","Bajaj"],["Skuter Listrik","Sepeda Listrik"]],
+  "Profesi": [["Dokter","Perawat"],["Guru","Dosen"],["Polisi","Tentara"],["Koki","Pelayan"],["Programmer","Desainer"],["Petani","Nelayan"],["Pilot","Pramugari"],["Arsitek","Kontraktor"]],
+  "Film": [["Avengers","Justice League"],["Spider-Man","Batman"],["Frozen","Moana"],["Titanic","The Notebook"],["Jumanji","Indiana Jones"],["Toy Story","Cars"],["Coco","Encanto"],["KKN Desa Penari","Pengabdi Setan"]],
+  "Teknologi": [["Smartphone","Tablet"],["Laptop","Komputer"],["Headset","Speaker"],["Drone","Robot"],["WiFi","Bluetooth"],["Kamera Digital","Kamera Analog"],["Smartwatch","Fitness Band"],["Printer","Scanner"]],
+  "Game": [["Mobile Legends","Free Fire"],["Minecraft","Roblox"],["PUBG","Valorant"],["Genshin Impact","Honkai Star Rail"],["FIFA","PES"],["Among Us","Stumble Guys"],["Tekken","Street Fighter"],["Clash Royale","Clash of Clans"]],
+  "Buah": [["Apel","Pir"],["Mangga","Pepaya"],["Jeruk","Lemon"],["Semangka","Melon"],["Anggur","Ceri"],["Pisang","Nangka"],["Durian","Nangka"],["Stroberi","Rasberi"]],
+  "Benda": [["Kursi","Meja"],["Payung","Jas Hujan"],["Sikat Gigi","Pasta Gigi"],["Buku","Majalah"],["Jam Tangan","Jam Dinding"],["Kacamata","Lensa Kontak"],["Tas","Dompet"],["Bantal","Guling"]]
+};
+const ALL_CATEGORIES = Object.keys(WORD_BANK).concat(["Acak"]);
+
+function pickWordPair(category){
+  if(category === "Acak" || !WORD_BANK[category]){
+    const cats = Object.keys(WORD_BANK);
+    const rc = cats[Math.floor(Math.random()*cats.length)];
+    const pair = WORD_BANK[rc][Math.floor(Math.random()*WORD_BANK[rc].length)];
+    return { civilian: pair[0], spy: pair[1], usedCategory: rc };
+  }
+  const pair = WORD_BANK[category][Math.floor(Math.random()*WORD_BANK[category].length)];
+  return { civilian: pair[0], spy: pair[1], usedCategory: category };
+}
+
+/* ======================= KONFIGURASI PERMAINAN ======================= */
+const MIN_PLAYERS = 4;
+const MAX_PLAYERS = 12;
+const CLUE_TURN_SECONDS = 45;     // waktu tiap pemain memberi petunjuk
+const VOTING_SECONDS = 30;        // waktu fase voting
+const SPYGUESS_SECONDS = 25;      // waktu spy menebak kata
+const QUICKMATCH_GRACE_MS = 15000;   // jeda sebelum room quick-match auto-mulai (beri waktu pemain lain join)
+const QUICKMATCH_STALE_MS = 3*60*1000; // antrean lebih tua dari ini dianggap ditinggalkan & dibuang otomatis
+
+/* ======================= STATE GLOBAL DI CLIENT ======================= */
+let currentUser = null;         // firebase auth user
+let currentUserName = "";
+let currentRoomCode = null;
+let unsubRoom = null;           // unsubscribe listener Firestore room
+let unsubSecret = null;         // unsubscribe listener secret word milik sendiri
+let unsubPresence = null;       // unsubscribe listener presence RTDB
+let roomData = null;            // snapshot data room terakhir
+let mySecret = null;            // {role, word} milik user ini untuk ronde berjalan
+let isHost = false;
+let tickInterval = null;        // interval untuk update timer & (jika host) auto phase-advance
+let wordModalShownForRound = -1;
+let audioCtx = null;
+let quickMatchAutoStartedForRoom = null; // simpan roomCode yg sudah dieksekusi auto-start (cegah trigger dobel)
+
+/* --- state khusus matchmaking (mencari lawan acak) --- */
+let unsubMmQueue = null;    // listener dokumen antrean global (untuk teks "X pemain mengantre")
+let unsubMmAssign = null;   // listener dokumen penugasan room untuk uid kita sendiri
+let inQuickMatchQueue = false;
+
+/* ======================= UTIL: TOAST & LOADING ======================= */
+function showToast(msg, type="info", icon="circle-info"){
+  const c = document.getElementById("toast-container");
+  const el = document.createElement("div");
+  el.className = "toast " + (type==="error"?"err":type==="success"?"ok":"");
+  el.innerHTML = `<i class="fa-solid fa-${icon}"></i><span>${msg}</span>`;
+  c.appendChild(el);
+  setTimeout(()=>{ el.style.opacity="0"; el.style.transition="opacity .3s"; setTimeout(()=>el.remove(),300); }, 3200);
+}
+function setLoading(on){ document.getElementById("loading-overlay").classList.toggle("active", !!on); }
+
+/* ======================= UTIL: AUDIO SEDERHANA (Web Audio, tanpa file eksternal) ======================= */
+function beep(freq=440, dur=0.15, type="sine", vol=0.18){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type; osc.frequency.value = freq;
+    gain.gain.value = vol;
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+    osc.stop(audioCtx.currentTime + dur);
+  }catch(e){ /* audio tidak tersedia, abaikan */ }
+}
+function sfxVote(){ beep(660,0.12,"triangle"); }
+function sfxReveal(){ beep(220,0.25,"sawtooth"); setTimeout(()=>beep(180,0.3,"sawtooth"),150); }
+function sfxWin(){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,0.2,"sine",0.2), i*120)); }
+function sfxLose(){ [400,320,240].forEach((f,i)=>setTimeout(()=>beep(f,0.3,"sawtooth",0.18), i*150)); }
+function fireConfetti(){
+  if(typeof confetti !== "function") return;
+  const duration = 2200, end = Date.now()+duration;
+  (function frame(){
+    confetti({particleCount:5, angle:60, spread:65, origin:{x:0}, colors:["#8b5cf6","#ec4899","#22d3ee"]});
+    confetti({particleCount:5, angle:120, spread:65, origin:{x:1}, colors:["#8b5cf6","#ec4899","#22d3ee"]});
+    if(Date.now() < end) requestAnimationFrame(frame);
+  })();
+}
+
+/* ======================= SCREEN NAVIGATION ======================= */
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+/* ======================= AUTH ======================= */
+window.switchAuthTab = function(tab){
+  document.getElementById("tab-login").classList.toggle("active", tab==="login");
+  document.getElementById("tab-register").classList.toggle("active", tab==="register");
+  document.getElementById("form-login").style.display = tab==="login" ? "block":"none";
+  document.getElementById("form-register").style.display = tab==="register" ? "block":"none";
+};
+
+window.doLogin = async function(){
+  const email = document.getElementById("login-email").value.trim();
+  const pass = document.getElementById("login-pass").value;
+  const errEl = document.getElementById("login-error");
+  errEl.textContent = "";
+  if(!email || !pass){ errEl.textContent = "Email & kata sandi wajib diisi."; return; }
+  setLoading(true);
+  try{
+    await signInWithEmailAndPassword(auth, email, pass);
+  }catch(e){
+    errEl.textContent = translateAuthError(e.code);
+  }
+  setLoading(false);
+};
+
+window.doRegister = async function(){
+  const name = document.getElementById("reg-name").value.trim();
+  const email = document.getElementById("reg-email").value.trim();
+  const pass = document.getElementById("reg-pass").value;
+  const errEl = document.getElementById("register-error");
+  errEl.textContent = "";
+  if(!name || !email || !pass){ errEl.textContent = "Semua kolom wajib diisi."; return; }
+  if(pass.length < 6){ errEl.textContent = "Kata sandi minimal 6 karakter."; return; }
+  setLoading(true);
+  try{
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, { displayName: name });
+  }catch(e){
+    errEl.textContent = translateAuthError(e.code);
+  }
+  setLoading(false);
+};
+
+window.doLogout = async function(){
+  await cleanupBeforeLeaveApp();
+  await signOut(auth);
+};
+
+function translateAuthError(code){
+  const map = {
+    "auth/email-already-in-use":"Email sudah terdaftar.",
+    "auth/invalid-email":"Format email tidak valid.",
+    "auth/weak-password":"Kata sandi terlalu lemah.",
+    "auth/user-not-found":"Akun tidak ditemukan.",
+    "auth/wrong-password":"Kata sandi salah.",
+    "auth/invalid-credential":"Email atau kata sandi salah."
+  };
+  return map[code] || ("Terjadi kesalahan: " + code);
+}
+
+onAuthStateChanged(auth, (user)=>{
+  if(user){
+    currentUser = user;
+    currentUserName = user.displayName || (user.email ? user.email.split("@")[0] : "Pemain");
+    document.getElementById("lobby-username").textContent = currentUserName;
+    populateCategorySelect(document.getElementById("create-category"));
+    showScreen("screen-lobby");
+  }else{
+    currentUser = null;
+    showScreen("screen-auth");
+  }
+});
+
+function populateCategorySelect(sel){
+  sel.innerHTML = "";
+  ALL_CATEGORIES.forEach(c=>{
+    const o = document.createElement("option"); o.value = c; o.textContent = c; sel.appendChild(o);
+  });
+}
+
+/* ======================= LOBBY: PANEL TOGGLE ======================= */
+window.showCreatePanel = function(){
+  document.getElementById("create-panel").style.display = "block";
+  document.getElementById("join-panel").style.display = "none";
+  document.getElementById("quickmatch-panel").style.display = "none";
+};
+window.showJoinPanel = function(){
+  document.getElementById("join-panel").style.display = "block";
+  document.getElementById("create-panel").style.display = "none";
+  document.getElementById("quickmatch-panel").style.display = "none";
+};
+window.showQuickMatchPanel = function(){
+  document.getElementById("quickmatch-panel").style.display = "block";
+  document.getElementById("create-panel").style.display = "none";
+  document.getElementById("join-panel").style.display = "none";
+};
+
+/* ======================= UTIL: KODE ROOM ACAK 6 KARAKTER ======================= */
+function generateCode(){
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // tanpa huruf/angka mirip (I,O,0,1)
+  let s = "";
+  for(let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+async function generateUniqueRoomCode(){
+  for(let attempt=0; attempt<8; attempt++){
+    const code = generateCode();
+    const snap = await getDoc(doc(db,"rooms",code));
+    if(!snap.exists()) return code;
+  }
+  throw new Error("Gagal membuat kode unik, coba lagi.");
+}
+
+/* ======================= BUAT ROOM ======================= */
+window.createRoomFlow = async function(){
+  const errEl = document.getElementById("create-error");
+  errEl.textContent = "";
+  const category = document.getElementById("create-category").value;
+  const blankMode = document.getElementById("create-blank").checked;
+  setLoading(true);
+  try{
+    const code = await generateUniqueRoomCode();
+    const roomRef = doc(db,"rooms",code);
+    await setDoc(roomRef, {
+      code,
+      hostId: currentUser.uid,
+      status: "lobby",              // lobby | clue | voting | reveal | spyGuess | result
+      category, blankMode,
+      minPlayers: MIN_PLAYERS, maxPlayers: MAX_PLAYERS,
+      players: {
+        [currentUser.uid]: { name: currentUserName, isHost:true, online:true, joinedAt: Date.now() }
+      },
+      round: 0,
+      turnOrder: [], currentTurnIndex: 0,
+      roundHistory: [], votes: {}, spyId: null,
+      timerEndAt: null, timerDuration: 0, phase: "lobby",
+      lastVotedUid: null, winner: null, winnerReason: "",
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+    await enterRoom(code);
+  }catch(e){
+    console.error(e);
+    errEl.textContent = "Gagal membuat room: " + (e.message||e.code||"unknown error");
+  }
+  setLoading(false);
+};
+
+/* ======================= GABUNG ROOM ======================= */
+window.joinRoomFlow = async function(){
+  const errEl = document.getElementById("join-error");
+  errEl.textContent = "";
+  const code = document.getElementById("join-code").value.trim().toUpperCase();
+  if(code.length !== 6){ errEl.textContent = "Kode room harus 6 karakter."; return; }
+  setLoading(true);
+  try{
+    const roomRef = doc(db,"rooms",code);
+    // Gunakan transaksi supaya penambahan pemain aman dari race-condition (anti-cheat sederhana: validasi kapasitas & status di server-side transaction)
+    await runTransaction(db, async (tx)=>{
+      const snap = await tx.get(roomRef);
+      if(!snap.exists()) throw new Error("Room tidak ditemukan. Periksa kembali kode room.");
+      const data = snap.data();
+      if(data.status !== "lobby") throw new Error("Permainan di room ini sudah dimulai.");
+      const players = data.players || {};
+      if(players[currentUser.uid]) return; // sudah join sebelumnya, lanjut saja
+      const count = Object.keys(players).length;
+      if(count >= (data.maxPlayers||MAX_PLAYERS)) throw new Error("Room sudah penuh.");
+      players[currentUser.uid] = { name: currentUserName, isHost:false, online:true, joinedAt: Date.now() };
+      tx.update(roomRef, { players, updatedAt: serverTimestamp() });
+    });
+    await enterRoom(code);
+  }catch(e){
+    console.error(e);
+    errEl.textContent = e.message || "Gagal bergabung ke room.";
+  }
+  setLoading(false);
+};
+
+/* ======================= MATCHMAKING: MAIN DENGAN PEMAIN ACAK =======================
+   Konsep:
+   - Ada 1 dokumen antrean global: matchmaking/global -> { players: { uid: {name, joinedAt} } }
+   - Saat jumlah pemain di antrean (yang masih "segar", belum kedaluwarsa) mencapai
+     MIN_PLAYERS, salah satu transaksi yang berhasil commit akan:
+       1) membuat room baru berisi semua pemain yang ada di antrean saat itu
+        (dibatasi maksimal MAX_PLAYERS, sisanya tetap di antrean utk dicocokkan lagi),
+       2) menuliskan "surat tugas" ke koleksi matchmakingAssignments/{uid} utk tiap
+          pemain yang berhasil dicocokkan, berisi kode room barunya.
+   - Semua client yang sedang menunggu mendengarkan dokumen matchmakingAssignments/{uid}
+     miliknya sendiri sehingga begitu ada penugasan, mereka otomatis pindah ke room itu.
+   - Room hasil matchmaking ditandai isQuickMatch:true dan punya matchStartAt supaya
+     permainan otomatis dimulai setelah jeda singkat (lihat gameTick), tidak perlu
+     menunggu ada yang menekan tombol "Mulai" secara manual.
+   - Antrean juga menyimpan kategori terpisah dari kategori room; untuk mempercepat
+     pencocokan (agar pemain tidak terpecah ke 11 antrean berbeda), semua pemain quick
+     match digabung dalam SATU antrean dan kategori kata room-nya diacak ("Acak"). ======================= */
+
+window.startQuickMatch = async function(){
+  const errEl = document.getElementById("quickmatch-error");
+  errEl.textContent = "";
+  document.getElementById("quickmatch-idle").style.display = "none";
+  document.getElementById("quickmatch-searching").style.display = "block";
+  inQuickMatchQueue = true;
+
+  try{
+    const precomputedCode = await generateUniqueRoomCode(); // disiapkan lebih dulu, dipakai HANYA jika transaksi ini yg membuat room
+    const mmRef = doc(db,"matchmaking","global");
+
+    await runTransaction(db, async (tx)=>{
+      const snap = await tx.get(mmRef);
+      const now = Date.now();
+      const rawPlayers = snap.exists() ? (snap.data().players||{}) : {};
+
+      // buang entri antrean yang sudah kedaluwarsa (dianggap ditinggalkan / tab ditutup)
+      const players = {};
+      Object.entries(rawPlayers).forEach(([uid,p])=>{
+        if(now - (p.joinedAt||0) < QUICKMATCH_STALE_MS) players[uid] = p;
+      });
+
+      if(!players[currentUser.uid]){
+        players[currentUser.uid] = { name: currentUserName, joinedAt: now };
+      }
+
+      const sortedUids = Object.keys(players).sort((a,b)=> players[a].joinedAt - players[b].joinedAt);
+
+      if(sortedUids.length >= MIN_PLAYERS){
+        const chosen = sortedUids.slice(0, MAX_PLAYERS);
+        const leftover = sortedUids.slice(MAX_PLAYERS);
+
+        const roomPlayers = {};
+        chosen.forEach((uid,idx)=>{
+          roomPlayers[uid] = { name: players[uid].name, isHost: idx===0, online:true, joinedAt: Date.now() };
+        });
+
+        const roomRef = doc(db,"rooms",precomputedCode);
+        tx.set(roomRef, {
+          code: precomputedCode,
+          hostId: chosen[0],
+          status:"lobby", category:"Acak", blankMode:false,
+          minPlayers: MIN_PLAYERS, maxPlayers: MAX_PLAYERS,
+          players: roomPlayers,
+          isQuickMatch: true,
+          matchStartAt: Date.now() + QUICKMATCH_GRACE_MS,
+          round:0, turnOrder:[], currentTurnIndex:0, roundHistory:[], votes:{}, spyId:null,
+          timerEndAt:null, timerDuration:0, phase:"lobby", lastVotedUid:null, winner:null, winnerReason:"",
+          createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+        });
+
+        // beri "surat tugas" ke tiap pemain yang terpilih supaya client masing2 tahu harus pindah ke room mana
+        chosen.forEach(uid=>{
+          tx.set(doc(db,"matchmakingAssignments",uid), { roomCode: precomputedCode, ts: Date.now() });
+        });
+
+        const remainingPlayers = {};
+        leftover.forEach(uid=>{ remainingPlayers[uid] = players[uid]; });
+        tx.set(mmRef, { players: remainingPlayers, updatedAt: serverTimestamp() });
+      }else{
+        tx.set(mmRef, { players, updatedAt: serverTimestamp() });
+      }
+    });
+
+    listenMatchmaking();
+  }catch(e){
+    console.error(e);
+    errEl.textContent = "Gagal mencari pemain: " + (e.message||e.code||"unknown error");
+    document.getElementById("quickmatch-idle").style.display = "block";
+    document.getElementById("quickmatch-searching").style.display = "none";
+    inQuickMatchQueue = false;
+  }
+};
+
+function listenMatchmaking(){
+  stopMatchmakingListeners();
+
+  // Dengarkan surat tugas milik kita sendiri -> begitu ada, langsung masuk ke room tsb
+  unsubMmAssign = onSnapshot(doc(db,"matchmakingAssignments",currentUser.uid), async (snap)=>{
+    if(snap.exists() && snap.data().roomCode){
+      const code = snap.data().roomCode;
+      try{ await deleteDoc(doc(db,"matchmakingAssignments",currentUser.uid)); }catch(e){}
+      stopMatchmakingListeners();
+      inQuickMatchQueue = false;
+      showToast("Pemain ditemukan! Bergabung ke room...","success","people-group");
+      await enterRoom(code);
+    }
+  });
+
+  // Dengarkan jumlah antrean untuk teks "X pemain mengantre"
+  unsubMmQueue = onSnapshot(doc(db,"matchmaking","global"), (snap)=>{
+    const players = snap.exists() ? (snap.data().players||{}) : {};
+    const now = Date.now();
+    const freshCount = Object.values(players).filter(p=> now-(p.joinedAt||0) < QUICKMATCH_STALE_MS).length;
+    const el = document.getElementById("quickmatch-queue-text");
+    if(el) el.textContent = `${freshCount} pemain dalam antrean (min ${MIN_PLAYERS})`;
+  });
+}
+
+function stopMatchmakingListeners(){
+  if(unsubMmAssign){ unsubMmAssign(); unsubMmAssign=null; }
+  if(unsubMmQueue){ unsubMmQueue(); unsubMmQueue=null; }
+}
+
+window.cancelQuickMatch = async function(){
+  setLoading(true);
+  try{
+    await runTransaction(db, async (tx)=>{
+      const mmRef = doc(db,"matchmaking","global");
+      const snap = await tx.get(mmRef);
+      if(!snap.exists()) return;
+      const players = { ...(snap.data().players||{}) };
+      delete players[currentUser.uid];
+      tx.set(mmRef, { players, updatedAt: serverTimestamp() });
+    });
+  }catch(e){ console.error(e); }
+  stopMatchmakingListeners();
+  inQuickMatchQueue = false;
+  document.getElementById("quickmatch-idle").style.display = "block";
+  document.getElementById("quickmatch-searching").style.display = "none";
+  setLoading(false);
+};
+
+/* ======================= MASUK KE ROOM (setup listener + presence) ======================= */
+async function enterRoom(code){
+  stopMatchmakingListeners(); // pastikan tidak ada listener antrean tersisa saat sudah masuk room
+  inQuickMatchQueue = false;
+  quickMatchAutoStartedForRoom = null;
+  currentRoomCode = code;
+  setupPresence(code);
+  listenRoom(code);
+  document.getElementById("room-code-display").textContent = code;
+  document.getElementById("game-room-code").textContent = code;
+  showScreen("screen-room");
+}
+
+/* ======================= PRESENCE (Realtime Database) =======================
+   Pola resmi Firebase: memakai `.info/connected` + onDisconnect() supaya status
+   online/offline terdeteksi otomatis walau browser ditutup paksa / koneksi putus. */
+function setupPresence(code){
+  if(unsubPresence) unsubPresence();
+  const myPresenceRef = ref(rtdb, `presence/${code}/${currentUser.uid}`);
+  const connectedRef = ref(rtdb, ".info/connected");
+
+  const cb = onValue(connectedRef, (snap)=>{
+    if(snap.val() === true){
+      // saat online: pasang onDisconnect agar otomatis offline saat koneksi putus
+      onDisconnect(myPresenceRef).set({ online:false, lastChanged: rtdbServerTimestamp() }).then(()=>{
+        set(myPresenceRef, { online:true, name: currentUserName, lastChanged: rtdbServerTimestamp() });
+      });
+    }
+  });
+  unsubPresence = ()=> cb();
+
+  // Dengarkan seluruh presence di room ini untuk update titik online/offline realtime di UI
+  const roomPresenceRef = ref(rtdb, `presence/${code}`);
+  onValue(roomPresenceRef, (snap)=>{
+    const val = snap.val() || {};
+    applyPresenceToUI(val);
+    // Jika kita host, sinkronkan status online ke Firestore supaya field players[].online konsisten
+    if(isHost && roomData){
+      syncPresenceToFirestoreIfHost(val);
+    }
+  });
+}
+
+let presenceCache = {};
+function applyPresenceToUI(presenceMap){
+  presenceCache = presenceMap;
+  document.querySelectorAll(`[data-presence-uid]`).forEach(el=>{
+    const uid = el.getAttribute("data-presence-uid");
+    const online = !!(presenceMap[uid] && presenceMap[uid].online);
+    const dot = el.querySelector(".status-dot");
+    if(dot){ dot.classList.toggle("online", online); dot.classList.toggle("offline", !online); }
+    const tag = el.querySelector(".tag.online, .tag.offline");
+    if(tag){
+      tag.textContent = online ? "Online" : "Offline";
+      tag.classList.toggle("online", online); tag.classList.toggle("offline", !online);
+    }
+  });
+}
+
+let lastPresenceSyncAt = 0;
+async function syncPresenceToFirestoreIfHost(presenceMap){
+  // throttle supaya tidak spam write ke Firestore
+  const now = Date.now();
+  if(now - lastPresenceSyncAt < 4000) return;
+  lastPresenceSyncAt = now;
+  if(!roomData || !roomData.players) return;
+  const updates = {};
+  let changed = false;
+  for(const uid of Object.keys(roomData.players)){
+    const online = !!(presenceMap[uid] && presenceMap[uid].online);
+    if(roomData.players[uid].online !== online){
+      updates[`players.${uid}.online`] = online;
+      changed = true;
+    }
+  }
+  if(changed){
+    try{ await updateDoc(doc(db,"rooms",currentRoomCode), updates); }catch(e){ /* abaikan jika room sudah dihapus */ }
+  }
+}
+
+/* ======================= LISTENER UTAMA ROOM (Firestore realtime) ======================= */
+function listenRoom(code){
+  if(unsubRoom) unsubRoom();
+  unsubRoom = onSnapshot(doc(db,"rooms",code), (snap)=>{
+    if(!snap.exists()){
+      showToast("Room telah dihapus (semua pemain keluar / dibubarkan host).","error","triangle-exclamation");
+      backToLobbyLocal();
+      return;
+    }
+    roomData = snap.data();
+    isHost = roomData.hostId === currentUser.uid;
+    renderRoomState();
+  }, (err)=>{
+    console.error("listenRoom error", err);
+  });
+
+  // Listener kata rahasia milik sendiri (subcollection rooms/{code}/secrets/{uid})
+  // Dipisah dari dokumen utama supaya pemain lain TIDAK BISA membaca kata milik kita
+  // (lihat security rules referensi di bagian bawah file).
+  if(unsubSecret) unsubSecret();
+  unsubSecret = onSnapshot(doc(db,"rooms",code,"secrets",currentUser.uid), (snap)=>{
+    mySecret = snap.exists() ? snap.data() : null;
+  }, ()=>{ mySecret = null; });
+
+  if(!tickInterval) tickInterval = setInterval(gameTick, 1000);
+}
+
+/* ======================= RENDER UTAMA BERDASARKAN STATUS ROOM ======================= */
+function renderRoomState(){
+  if(!roomData) return;
+
+  document.getElementById("room-player-count").textContent = Object.keys(roomData.players||{}).length;
+  document.getElementById("room-max-count").textContent = roomData.maxPlayers || MAX_PLAYERS;
+
+  if(roomData.status === "lobby"){
+    showScreen("screen-room");
+    renderLobbyRoom();
+  }else{
+    showScreen("screen-game");
+    renderGameRoom();
+  }
+}
+
+/* ---------------- LOBBY / WAITING ROOM RENDER ---------------- */
+function renderLobbyRoom(){
+  const grid = document.getElementById("room-player-grid");
+  grid.innerHTML = "";
+  const players = roomData.players || {};
+  Object.entries(players).forEach(([uid,p])=>{
+    grid.appendChild(buildPlayerCard(uid,p,{selectable:false}));
+  });
+  applyPresenceToUI(presenceCache);
+
+  document.getElementById("host-controls").style.display = isHost ? "block":"none";
+  document.getElementById("guest-waiting").style.display = isHost ? "none":"block";
+  document.getElementById("room-quickmatch-chip").style.display = roomData.isQuickMatch ? "inline-flex":"none";
+  document.getElementById("quickmatch-countdown-wrap").style.display = roomData.isQuickMatch ? "block":"none";
+  document.getElementById("guest-waiting").innerHTML = roomData.isQuickMatch
+    ? '<i class="fa-solid fa-hourglass-half"></i> Permainan akan mulai otomatis<span class="waiting-dots"></span>'
+    : '<i class="fa-solid fa-hourglass-half"></i> Menunggu host memulai permainan<span class="waiting-dots"></span>';
+
+  if(isHost){
+    const catSel = document.getElementById("room-category");
+    if(catSel.options.length === 0) populateCategorySelect(catSel);
+    catSel.value = roomData.category;
+    document.getElementById("room-blank").checked = !!roomData.blankMode;
+    const count = Object.keys(players).length;
+    const btn = document.getElementById("btn-start-game");
+    btn.disabled = count < MIN_PLAYERS;
+    btn.innerHTML = count < MIN_PLAYERS
+      ? `<i class="fa-solid fa-play"></i> Minimal ${MIN_PLAYERS} pemain (${count}/${MIN_PLAYERS})`
+      : `<i class="fa-solid fa-play"></i> Mulai Permainan (${count} pemain)`;
+  }
+}
+
+function buildPlayerCard(uid, p, opts={}){
+  const div = document.createElement("div");
+  div.className = "player-card" + (uid===currentUser.uid ? " me":"");
+  div.setAttribute("data-presence-uid", uid);
+  const online = !!(presenceCache[uid] && presenceCache[uid].online);
+  const initials = (p.name||"?").trim().slice(0,2).toUpperCase();
+  div.innerHTML = `
+    <div class="status-dot ${online?'online':'offline'}"></div>
+    <div class="avatar">${initials}</div>
+    <div class="player-name">${escapeHtml(p.name||"Pemain")}</div>
+    <div class="player-tags">
+      ${p.isHost ? '<span class="tag host"><i class="fa-solid fa-crown"></i> Host</span>':''}
+      <span class="tag ${online?'online':'offline'}">${online?'Online':'Offline'}</span>
+    </div>`;
+  if(opts.selectable){
+    div.classList.add("selectable");
+    div.onclick = opts.onClick;
+  }
+  if(opts.turn) div.classList.add("turn");
+  if(opts.votedFor) div.classList.add("voted-for");
+  if(opts.voteCount){
+    const badge = document.createElement("div");
+    badge.className = "vote-count-badge";
+    badge.textContent = opts.voteCount;
+    div.appendChild(badge);
+  }
+  return div;
+}
+function escapeHtml(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+
+/* ---------------- HOST: UPDATE SETTING SAAT MASIH DI LOBBY ---------------- */
+window.hostUpdateSetting = async function(){
+  if(!isHost || !roomData || roomData.status!=="lobby") return;
+  const category = document.getElementById("room-category").value;
+  const blankMode = document.getElementById("room-blank").checked;
+  await updateDoc(doc(db,"rooms",currentRoomCode), { category, blankMode, updatedAt: serverTimestamp() });
+};
+
+/* ---------------- HOST: MULAI PERMAINAN ---------------- */
+window.hostStartGame = async function(){
+  if(!isHost || !roomData) return;
+  const players = roomData.players || {};
+  const uids = Object.keys(players);
+  if(uids.length < MIN_PLAYERS){ showToast("Minimal " + MIN_PLAYERS + " pemain.","error"); return; }
+  setLoading(true);
+  try{
+    await startNewRound(uids);
+  }catch(e){
+    console.error(e);
+    showToast("Gagal memulai permainan.","error");
+  }
+  setLoading(false);
+};
+
+async function startNewRound(uids){
+  // ANTI-CHEAT: hanya host yang boleh menjalankan fungsi ini (tombol hanya muncul utk host,
+  // dan seluruh transisi fase besar hanya ditulis oleh client host — lihat gameTick()).
+  const spyId = uids[Math.floor(Math.random()*uids.length)];
+  const { civilian, spy, usedCategory } = pickWordPair(roomData.category);
+  const turnOrder = shuffleArray([...uids]);
+  const roundNo = (roomData.round||0) + 1;
+  const endAt = Date.now() + CLUE_TURN_SECONDS*1000;
+
+  // Tulis kata rahasia ke subcollection privat per-pemain (tidak bisa dibaca pemain lain, lihat rules)
+  const writes = uids.map(uid=>{
+    const isSpy = uid === spyId;
+    const role = isSpy ? "spy" : "citizen";
+    const word = isSpy ? (roomData.blankMode ? "" : spy) : civilian;
+    return setDoc(doc(db,"rooms",currentRoomCode,"secrets",uid), { role, word, round: roundNo });
+  });
+  await Promise.all(writes);
+
+  await updateDoc(doc(db,"rooms",currentRoomCode), {
+    status: "clue", phase: "clue",
+    round: roundNo,
+    spyId, turnOrder, currentTurnIndex: 0,
+    roundHistory: [], votes: {}, lastVotedUid: null,
+    winner: null, winnerReason: "",
+    wordCivilian: civilian, wordSpyReveal: roomData.blankMode ? "(Blank Card)" : spy,
+    categoryUsed: usedCategory,
+    timerEndAt: endAt, timerDuration: CLUE_TURN_SECONDS,
+    updatedAt: serverTimestamp()
+  });
+}
+
+function shuffleArray(arr){
+  for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  return arr;
+}
+
+/* ---------------- HOST: KEMBALI KE LOBBY (MAIN LAGI) ---------------- */
+window.hostBackToLobby = async function(){
+  if(!isHost) return;
+  await updateDoc(doc(db,"rooms",currentRoomCode), {
+    status:"lobby", phase:"lobby", turnOrder:[], currentTurnIndex:0,
+    roundHistory:[], votes:{}, spyId:null, timerEndAt:null, winner:null, winnerReason:"",
+    updatedAt: serverTimestamp()
+  });
+};
+
+/* ======================= GAME SCREEN — RENDER PER FASE ======================= */
+function renderGameRoom(){
+  document.getElementById("game-round-no").textContent = roomData.round || 1;
+  updateTimerBar();
+
+  ["clue-phase-panel","voting-phase-panel","reveal-phase-panel","spyguess-phase-panel","result-phase-panel"]
+    .forEach(id=> document.getElementById(id).style.display = "none");
+
+  const banner = { icon:"comments", title:"Fase Petunjuk", desc:"Pemain memberi petunjuk secara bergiliran" };
+
+  if(roomData.status === "clue"){
+    banner.icon="comments"; banner.title="Fase Petunjuk"; banner.desc="Bergiliran memberi 1 kata petunjuk";
+    document.getElementById("clue-phase-panel").style.display = "block";
+    renderCluePhase();
+  }else if(roomData.status === "voting"){
+    banner.icon="check-to-slot"; banner.title="Fase Voting"; banner.desc="Pilih siapa yang kamu curigai sebagai Spy";
+    document.getElementById("voting-phase-panel").style.display = "block";
+    renderVotingPhase();
+  }else if(roomData.status === "reveal"){
+    banner.icon="gavel"; banner.title="Hasil Voting"; banner.desc="Mengungkap hasil pemungutan suara";
+    document.getElementById("reveal-phase-panel").style.display = "block";
+    renderRevealPhase();
+  }else if(roomData.status === "spyGuess"){
+    banner.icon="user-secret"; banner.title="Spy Menebak Kata"; banner.desc="Kesempatan terakhir bagi Spy";
+    document.getElementById("spyguess-phase-panel").style.display = "block";
+    renderSpyGuessPhase();
+  }else if(roomData.status === "result"){
+    banner.icon="trophy"; banner.title="Permainan Selesai"; banner.desc="Lihat siapa yang menang ronde ini";
+    document.getElementById("result-phase-panel").style.display = "block";
+    renderResultPhase();
+  }
+  document.getElementById("phase-title").textContent = banner.title;
+  document.getElementById("phase-desc").textContent = banner.desc;
+  document.querySelector("#phase-banner i").className = "fa-solid fa-" + banner.icon;
+
+  renderHistory();
+  maybeShowWordModal();
+}
+
+/* ---------------- FASE PETUNJUK (CLUE) ---------------- */
+function renderCluePhase(){
+  const grid = document.getElementById("game-player-grid");
+  grid.innerHTML = "";
+  const order = roomData.turnOrder || [];
+  const curUid = order[roomData.currentTurnIndex];
+  order.forEach(uid=>{
+    const p = (roomData.players||{})[uid];
+    if(!p) return;
+    grid.appendChild(buildPlayerCard(uid,p,{ turn: uid===curUid }));
+  });
+  applyPresenceToUI(presenceCache);
+
+  const isMyTurn = curUid === currentUser.uid;
+  document.getElementById("my-clue-input-wrap").style.display = isMyTurn ? "block":"none";
+  if(isMyTurn) document.getElementById("clue-input").focus();
+}
+
+window.submitMyClue = async function(){
+  const order = roomData.turnOrder || [];
+  const curUid = order[roomData.currentTurnIndex];
+  if(curUid !== currentUser.uid){ showToast("Bukan giliran kamu.","error"); return; } // anti-cheat check
+  const input = document.getElementById("clue-input");
+  const text = input.value.trim();
+  if(!text){ showToast("Petunjuk tidak boleh kosong.","error"); return; }
+  input.value = "";
+  await advanceAfterClue(text);
+};
+
+async function advanceAfterClue(text){
+  const myName = (roomData.players[currentUser.uid]||{}).name || currentUserName;
+  const newHistory = [...(roomData.roundHistory||[]), { uid: currentUser.uid, name: myName, clue: text, round: roomData.round }];
+  const nextIndex = roomData.currentTurnIndex + 1;
+  const order = roomData.turnOrder||[];
+
+  if(nextIndex >= order.length){
+    // semua sudah memberi petunjuk -> lanjut ke voting
+    await updateDoc(doc(db,"rooms",currentRoomCode), {
+      roundHistory: newHistory, currentTurnIndex: nextIndex,
+      status:"voting", phase:"voting", votes:{},
+      timerEndAt: Date.now()+VOTING_SECONDS*1000, timerDuration: VOTING_SECONDS,
+      updatedAt: serverTimestamp()
+    });
+  }else{
+    await updateDoc(doc(db,"rooms",currentRoomCode), {
+      roundHistory: newHistory, currentTurnIndex: nextIndex,
+      timerEndAt: Date.now()+CLUE_TURN_SECONDS*1000, timerDuration: CLUE_TURN_SECONDS,
+      updatedAt: serverTimestamp()
+    });
+  }
+}
+
+/* ---------------- FASE VOTING ---------------- */
+function renderVotingPhase(){
+  const grid = document.getElementById("voting-player-grid");
+  grid.innerHTML = "";
+  const players = roomData.players || {};
+  const votes = roomData.votes || {};
+  const myVote = votes[currentUser.uid];
+  const voteCounts = {};
+  Object.values(votes).forEach(v=>{ voteCounts[v]=(voteCounts[v]||0)+1; });
+
+  Object.entries(players).forEach(([uid,p])=>{
+    const isSelf = uid === currentUser.uid;
+    const card = buildPlayerCard(uid,p,{
+      selectable: !isSelf,
+      votedFor: myVote===uid,
+      voteCount: voteCounts[uid]||0,
+      onClick: isSelf? null : ()=>castVote(uid)
+    });
+    grid.appendChild(card);
+  });
+  applyPresenceToUI(presenceCache);
+
+  const votedCount = Object.keys(votes).length;
+  const total = Object.keys(players).length;
+  document.getElementById("voting-status-text").textContent = `${votedCount} dari ${total} pemain sudah voting`;
+}
+
+async function castVote(targetUid){
+  if(targetUid === currentUser.uid){ showToast("Tidak bisa memilih diri sendiri.","error"); return; } // anti-cheat
+  sfxVote();
+  await updateDoc(doc(db,"rooms",currentRoomCode), { [`votes.${currentUser.uid}`]: targetUid, updatedAt: serverTimestamp() });
+  // Jika seluruh pemain sudah vote, host akan menutup voting via gameTick()
+}
+
+/* ---------------- FASE REVEAL (HASIL VOTING) ---------------- */
+function renderRevealPhase(){
+  const votes = roomData.votes || {};
+  const voteCounts = {};
+  Object.values(votes).forEach(v=>{ voteCounts[v]=(voteCounts[v]||0)+1; });
+  const votedUid = roomData.lastVotedUid;
+  const votedName = votedUid ? ((roomData.players[votedUid]||{}).name||"?") : "Tidak ada (seri)";
+  const isSpyCaught = votedUid === roomData.spyId;
+
+  document.getElementById("reveal-title").textContent = `${votedName} mendapat suara terbanyak`;
+  document.getElementById("reveal-desc").innerHTML = isSpyCaught
+    ? `🎯 Tepat! <b>${escapeHtml(votedName)}</b> adalah Spy-nya. Menunggu Spy menebak kata...`
+    : `❌ Salah tebak! <b>${escapeHtml(votedName)}</b> bukan Spy. Spy menang ronde ini.`;
+  sfxReveal();
+}
+
+/* ---------------- FASE SPY MENEBAK KATA ---------------- */
+function renderSpyGuessPhase(){
+  const iAmSpy = currentUser.uid === roomData.spyId;
+  document.getElementById("spyguess-input-area").style.display = iAmSpy ? "block":"none";
+  document.getElementById("spyguess-desc").textContent = iAmSpy
+    ? "Tebak kata warga untuk menang! Kamu punya 1 kesempatan."
+    : "Menunggu Spy menebak kata warga...";
+}
+
+window.submitSpyGuess = async function(){
+  if(currentUser.uid !== roomData.spyId){ return; } // anti-cheat: hanya spy yang boleh submit
+  const input = document.getElementById("spy-guess-input");
+  const guess = input.value.trim().toLowerCase();
+  if(!guess){ showToast("Isi tebakan dulu.","error"); return; }
+  const correct = guess === (roomData.wordCivilian||"").trim().toLowerCase();
+  await finalizeResult(correct ? "spy":"citizens", correct ? "Spy berhasil menebak kata warga!" : "Spy salah menebak kata.");
+};
+
+/* ---------------- FASE HASIL AKHIR ---------------- */
+function renderResultPhase(){
+  const heroEl = document.getElementById("result-hero");
+  const iWon = (roomData.winner==="spy" && currentUser.uid===roomData.spyId) ||
+               (roomData.winner==="citizens" && currentUser.uid!==roomData.spyId);
+  heroEl.className = "result-hero " + (iWon ? "win":"lose");
+  heroEl.querySelector("i").className = "fa-solid " + (iWon ? "fa-trophy":"fa-heart-crack");
+  document.getElementById("result-title").textContent = roomData.winner==="spy" ? "Spy Menang! 🕵️" : "Warga Menang! 🎉";
+  document.getElementById("result-desc").textContent = roomData.winnerReason || "";
+
+  const badges = document.getElementById("result-word-badges");
+  const spyName = (roomData.players[roomData.spyId]||{}).name || "?";
+  badges.innerHTML = `
+    <span class="chip"><i class="fa-solid fa-user-secret"></i> Spy: <b>&nbsp;${escapeHtml(spyName)}</b></span>
+    <span class="chip"><i class="fa-solid fa-comment-dots"></i> Kata Warga: <b>&nbsp;${escapeHtml(roomData.wordCivilian||"-")}</b></span>
+    <span class="chip"><i class="fa-solid fa-ghost"></i> Kata Spy: <b>&nbsp;${escapeHtml(roomData.wordSpyReveal||"-")}</b></span>
+    <span class="chip"><i class="fa-solid fa-tag"></i> Kategori: <b>&nbsp;${escapeHtml(roomData.categoryUsed||roomData.category||"-")}</b></span>
+  `;
+  document.getElementById("host-next-round-wrap").style.display = isHost ? "block":"none";
+
+  if(resultAnnouncedForRound !== roomData.round){
+    resultAnnouncedForRound = roomData.round;
+    if(iWon){ fireConfetti(); sfxWin(); } else { sfxLose(); }
+  }
+}
+let resultAnnouncedForRound = -1;
+
+async function finalizeResult(winner, reason){
+  await updateDoc(doc(db,"rooms",currentRoomCode), {
+    status:"result", phase:"result", winner, winnerReason: reason, timerEndAt:null, updatedAt: serverTimestamp()
+  });
+}
+
+/* ---------------- RIWAYAT PETUNJUK ---------------- */
+function renderHistory(){
+  const list = document.getElementById("history-list");
+  const hist = roomData.roundHistory || [];
+  if(hist.length === 0){
+    list.innerHTML = '<div class="small-muted" style="text-align:center; padding:14px 0;">Belum ada petunjuk</div>';
+    return;
+  }
+  list.innerHTML = hist.slice().reverse().map(h=>`
+    <div class="history-item">
+      <span class="who">${escapeHtml(h.name)}</span>
+      <span class="clue-text">"${escapeHtml(h.clue)}"</span>
+    </div>`).join("");
+}
+
+/* ---------------- MODAL KATA RAHASIA ---------------- */
+function maybeShowWordModal(){
+  if(roomData.status !== "clue") return;
+  if(wordModalShownForRound === roomData.round) return;
+  wordModalShownForRound = roomData.round;
+  openMyWordModal();
+}
+window.openMyWordModal = function(){
+  if(!mySecret){ showToast("Kata belum tersedia, tunggu sebentar.","info"); return; }
+  const isSpy = mySecret.role === "spy";
+  const card = document.getElementById("secret-word-card");
+  card.classList.toggle("spy", isSpy);
+  document.getElementById("secret-role").textContent = isSpy ? "🕵️ KAMU ADALAH SPY" : "👤 KAMU ADALAH WARGA";
+  document.getElementById("secret-word").textContent = mySecret.word && mySecret.word.length>0 ? mySecret.word : "🚫 BLANK CARD";
+  document.getElementById("secret-cat").textContent = "Kategori: " + (roomData.categoryUsed || roomData.category || "-");
+  document.getElementById("modal-word").classList.add("active");
+};
+window.closeWordModal = function(){ document.getElementById("modal-word").classList.remove("active"); };
+
+/* ======================= TIMER ======================= */
+function updateTimerBar(){
+  const bar = document.getElementById("timer-bar");
+  const text = document.getElementById("timer-text");
+  const phaseName = document.getElementById("timer-phase-name");
+  if(!roomData.timerEndAt || !roomData.timerDuration){
+    bar.style.width = "0%"; text.textContent = "--"; phaseName.textContent = "";
+    return;
+  }
+  const remainMs = Math.max(0, roomData.timerEndAt - Date.now());
+  const remainSec = Math.ceil(remainMs/1000);
+  const pct = Math.max(0, Math.min(100, (remainMs/1000/roomData.timerDuration)*100));
+  bar.style.width = pct + "%";
+  text.textContent = remainSec + " detik";
+  const names = { clue:"Fase Petunjuk", voting:"Fase Voting", spyGuess:"Spy Menebak" };
+  phaseName.textContent = names[roomData.status] || "";
+  if(remainSec <= 5) bar.style.background = "linear-gradient(90deg,#f87171,#fbbf24)";
+  else bar.style.background = "linear-gradient(90deg,var(--accent3),var(--accent1))";
+}
+
+/* ======================= GAME TICK — dijalankan tiap 1 detik =======================
+   Semua TRANSISI FASE (auto-skip giliran, tutup voting, dsb) HANYA dieksekusi
+   oleh client HOST. Ini adalah bentuk "validasi semua aksi dari host" karena
+   mencegah 2 client menulis transisi berbeda secara bersamaan / pemain non-host
+   memaksa perpindahan fase. */
+function gameTick(){
+  if(roomData && (roomData.status==="clue"||roomData.status==="voting"||roomData.status==="spyGuess")){
+    updateTimerBar();
+  }
+  if(roomData && roomData.status==="lobby" && roomData.isQuickMatch){
+    updateQuickMatchCountdown();
+  }
+  if(!isHost || !roomData) return;
+  const now = Date.now();
+
+  // ---- Quick Match: auto-mulai permainan begitu jeda selesai (atau room penuh) ----
+  if(roomData.status === "lobby" && roomData.isQuickMatch && quickMatchAutoStartedForRoom !== currentRoomCode){
+    const uids = Object.keys(roomData.players||{});
+    const timeUp = roomData.matchStartAt && now >= roomData.matchStartAt;
+    const isFull = uids.length >= (roomData.maxPlayers||MAX_PLAYERS);
+    if(uids.length >= MIN_PLAYERS && (timeUp || isFull)){
+      quickMatchAutoStartedForRoom = currentRoomCode;
+      startNewRound(uids).catch(e=>console.error(e));
+    }
+  }
+
+  if(roomData.status === "clue" && roomData.timerEndAt && now >= roomData.timerEndAt){
+    hostSkipTurnOnTimeout();
+  }else if(roomData.status === "voting"){
+    const votes = roomData.votes || {};
+    const totalPlayers = Object.keys(roomData.players||{}).length;
+    const allVoted = Object.keys(votes).length >= totalPlayers;
+    const timeUp = roomData.timerEndAt && now >= roomData.timerEndAt;
+    if(allVoted || timeUp) hostTallyVotes();
+  }else if(roomData.status === "spyGuess" && roomData.timerEndAt && now >= roomData.timerEndAt){
+    // spy tidak menebak sampai waktu habis -> warga menang
+    finalizeResult("citizens", "Waktu habis, Spy tidak sempat menebak kata.");
+  }else if(roomData.status === "reveal"){
+    // auto lanjut ke spyGuess / result setelah jeda singkat
+    hostProceedFromReveal();
+  }
+}
+
+function updateQuickMatchCountdown(){
+  const el = document.getElementById("quickmatch-countdown-text");
+  if(!el || !roomData.matchStartAt) return;
+  const remain = Math.max(0, Math.ceil((roomData.matchStartAt - Date.now())/1000));
+  const uids = Object.keys(roomData.players||{});
+  el.textContent = uids.length < MIN_PLAYERS ? `menunggu min. ${MIN_PLAYERS} pemain` : (remain + " detik");
+}
+
+let revealHandledForRound = -1;
+async function hostProceedFromReveal(){
+  if(revealHandledForRound === roomData.round) return;
+  revealHandledForRound = roomData.round;
+  await new Promise(r=>setTimeout(r,2200)); // jeda dramatis sebelum lanjut
+  const votedUid = roomData.lastVotedUid;
+  if(votedUid && votedUid === roomData.spyId){
+    await updateDoc(doc(db,"rooms",currentRoomCode), {
+      status:"spyGuess", phase:"spyGuess",
+      timerEndAt: Date.now()+SPYGUESS_SECONDS*1000, timerDuration: SPYGUESS_SECONDS,
+      updatedAt: serverTimestamp()
+    });
+  }else{
+    const reason = votedUid ? "Warga salah menuduh, Spy langsung menang." : "Suara seri, Spy menang secara otomatis.";
+    await finalizeResult("spy", reason);
+  }
+}
+
+async function hostSkipTurnOnTimeout(){
+  const order = roomData.turnOrder||[];
+  const curUid = order[roomData.currentTurnIndex];
+  const pname = (roomData.players[curUid]||{}).name || "Pemain";
+  const newHistory = [...(roomData.roundHistory||[]), { uid:curUid, name:pname, clue:"⏱️ (waktu habis, tidak memberi petunjuk)", round: roomData.round }];
+  const nextIndex = roomData.currentTurnIndex + 1;
+  const order2 = roomData.turnOrder||[];
+  if(nextIndex >= order2.length){
+    await updateDoc(doc(db,"rooms",currentRoomCode), {
+      roundHistory:newHistory, currentTurnIndex:nextIndex, status:"voting", phase:"voting", votes:{},
+      timerEndAt: Date.now()+VOTING_SECONDS*1000, timerDuration:VOTING_SECONDS, updatedAt: serverTimestamp()
+    });
+  }else{
+    await updateDoc(doc(db,"rooms",currentRoomCode), {
+      roundHistory:newHistory, currentTurnIndex:nextIndex,
+      timerEndAt: Date.now()+CLUE_TURN_SECONDS*1000, timerDuration:CLUE_TURN_SECONDS, updatedAt: serverTimestamp()
+    });
+  }
+}
+
+let tallyHandledForRound = -1;
+async function hostTallyVotes(){
+  if(tallyHandledForRound === roomData.round) return;
+  tallyHandledForRound = roomData.round;
+  const votes = roomData.votes || {};
+  const counts = {};
+  Object.values(votes).forEach(v=>{ counts[v]=(counts[v]||0)+1; });
+  let topUid = null, topCount = -1, tie = false;
+  Object.entries(counts).forEach(([uid,c])=>{
+    if(c>topCount){ topCount=c; topUid=uid; tie=false; }
+    else if(c===topCount){ tie=true; }
+  });
+  await updateDoc(doc(db,"rooms",currentRoomCode), {
+    status:"reveal", phase:"reveal", lastVotedUid: tie? null: topUid, timerEndAt:null, updatedAt: serverTimestamp()
+  });
+}
+
+/* ======================= KELUAR ROOM / CLEANUP ======================= */
+window.copyRoomCode = function(){
+  navigator.clipboard?.writeText(currentRoomCode||"").then(()=>showToast("Kode room disalin!","success","copy"));
+};
+
+window.leaveRoomFlow = async function(){
+  if(!currentRoomCode) return;
+  setLoading(true);
+  await leaveCurrentRoom();
+  setLoading(false);
+  showScreen("screen-lobby");
+};
+
+async function leaveCurrentRoom(){
+  const code = currentRoomCode;
+  if(!code) return;
+  try{
+    // hapus presence RTDB
+    await remove(ref(rtdb, `presence/${code}/${currentUser.uid}`));
+  }catch(e){}
+  try{
+    await runTransaction(db, async (tx)=>{
+      const roomRef = doc(db,"rooms",code);
+      const snap = await tx.get(roomRef);
+      if(!snap.exists()) return;
+      const data = snap.data();
+      const players = { ...(data.players||{}) };
+      delete players[currentUser.uid];
+      const remaining = Object.keys(players);
+
+      if(remaining.length === 0){
+        // Hapus room otomatis jika semua pemain keluar
+        tx.delete(roomRef);
+        return;
+      }
+      let hostId = data.hostId;
+      if(hostId === currentUser.uid){
+        hostId = remaining[0];
+        players[hostId] = { ...players[hostId], isHost:true };
+      }
+      tx.update(roomRef, { players, hostId, updatedAt: serverTimestamp() });
+    });
+    // bersihkan dokumen kata rahasia milik kita
+    try{ await deleteDoc(doc(db,"rooms",code,"secrets",currentUser.uid)); }catch(e){}
+  }catch(e){ console.error("leaveCurrentRoom error", e); }
+
+  if(unsubRoom){ unsubRoom(); unsubRoom=null; }
+  if(unsubSecret){ unsubSecret(); unsubSecret=null; }
+  if(unsubPresence){ unsubPresence(); unsubPresence=null; }
+  if(tickInterval){ clearInterval(tickInterval); tickInterval=null; }
+  currentRoomCode = null; roomData = null; mySecret=null; isHost=false;
+  wordModalShownForRound = -1; resultAnnouncedForRound = -1; tallyHandledForRound=-1; revealHandledForRound=-1;
+}
+
+function backToLobbyLocal(){
+  if(unsubRoom){ unsubRoom(); unsubRoom=null; }
+  if(unsubSecret){ unsubSecret(); unsubSecret=null; }
+  if(unsubPresence){ unsubPresence(); unsubPresence=null; }
+  if(tickInterval){ clearInterval(tickInterval); tickInterval=null; }
+  currentRoomCode = null; roomData = null; mySecret=null; isHost=false;
+  showScreen("screen-lobby");
+}
+
+async function cleanupBeforeLeaveApp(){
+  if(currentRoomCode) await leaveCurrentRoom();
+  if(inQuickMatchQueue) await cancelQuickMatch();
+}
+window.addEventListener("beforeunload", ()=>{
+  // best-effort; onDisconnect() di RTDB adalah jaminan utama saat koneksi terputus paksa
+  if(currentRoomCode && currentUser){
+    try{ remove(ref(rtdb, `presence/${currentRoomCode}/${currentUser.uid}`)); }catch(e){}
+  }
+});
+
+/* ======================= ENTER KEY SHORTCUTS ======================= */
+document.addEventListener("keydown", (e)=>{
+  if(e.key !== "Enter") return;
+  if(document.activeElement?.id === "login-pass") doLogin();
+  if(document.activeElement?.id === "reg-pass") doRegister();
+  if(document.activeElement?.id === "join-code") joinRoomFlow();
+  if(document.activeElement?.id === "clue-input") submitMyClue();
+  if(document.activeElement?.id === "spy-guess-input") submitSpyGuess();
+});
+document.getElementById("join-code")?.addEventListener("input", (e)=>{ e.target.value = e.target.value.toUpperCase(); });
+
+</script>
+
+<!-- =====================================================================================================
+REFERENSI SECURITY RULES (pasang manual di Firebase Console — tidak dieksekusi oleh file HTML ini)
+
+## Firestore Rules (Firestore Database > Rules)
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /rooms/{roomCode} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null; // untuk implementasi produksi, perketat per-field
+      allow delete: if request.auth != null;
+
+      match /secrets/{uid} {
+        // KUNCI ANTI-CHEAT: kata rahasia hanya bisa dibaca oleh pemiliknya sendiri
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow write: if request.auth != null; // idealnya dibatasi hanya host via Cloud Functions
+      }
+    }
+
+    // Antrean matchmaking global (fitur "Main Random")
+    match /matchmaking/{docId} {
+      allow read, write: if request.auth != null;
+    }
+    match /matchmakingAssignments/{uid} {
+      // hanya pemilik uid yg boleh membaca "surat tugas" room miliknya sendiri
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
+
+## Realtime Database Rules (Realtime Database > Rules)
+{
+  "rules": {
+    "presence": {
+      "$roomCode": {
+        "$uid": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid == $uid"
+        }
+      }
+    }
+  }
+}
+
+CATATAN KEAMANAN:
+- Rules di atas adalah tingkat "baik untuk skala kecil/menengah". Untuk keamanan production penuh
+  (mencegah host curang memodifikasi field secara langsung dari console), pindahkan logika
+  startNewRound(), hostTallyVotes(), dan finalizeResult() ke Cloud Functions (callable functions)
+  sehingga hanya server yang bisa menulis field sensitif (spyId, wordCivilian, votes tally, winner).
+- Implementasi saat ini (100% client-side) sudah menerapkan:
+  1) Pemisahan kata rahasia ke subcollection privat per-uid (tidak muncul di dokumen utama room).
+  2) Validasi giliran & kepemilikan aksi di client sebelum menulis (submitMyClue, castVote, submitSpyGuess).
+  3) Transisi fase besar hanya dieksekusi oleh client host (gameTick) untuk mencegah race-condition.
+  4) Transaksi Firestore (runTransaction) saat join room untuk mencegah melebihi kapasitas room.
+===================================================================================================== -->
+</body>
+</html>
