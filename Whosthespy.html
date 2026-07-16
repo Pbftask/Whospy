@@ -202,6 +202,31 @@ select{appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='h
 .modal-overlay{position:fixed; inset:0; background:rgba(5,3,15,.72); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; animation:fadein .25s ease;}
 .modal-overlay.active{display:flex;}
 .modal-card{max-width:420px; width:100%; text-align:center; animation:pop .3s cubic-bezier(.2,1.4,.4,1);}
+.modal-card.wide{max-width:480px; text-align:left;}
+
+/* ---------- Badge (notif count) ---------- */
+.btn-badge-wrap{position:relative;}
+.count-badge{position:absolute; top:-6px; right:-6px; background:linear-gradient(135deg,var(--accent2),var(--bad)); color:#fff; font-size:10px; font-weight:800; min-width:17px; height:17px; border-radius:9px; display:flex; align-items:center; justify-content:center; padding:0 4px; box-shadow:0 2px 6px rgba(0,0,0,.4);}
+
+/* ---------- Friends / Recruit lists ---------- */
+.list-scroll{max-height:280px; overflow-y:auto; margin-top:10px; display:flex; flex-direction:column; gap:8px;}
+.list-row{display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.045); border:1px solid var(--border); border-radius:14px; padding:10px 12px;}
+.list-row .avatar{width:38px; height:38px; font-size:13px; margin:0; flex-shrink:0;}
+.list-row .li-info{flex:1; min-width:0;}
+.list-row .li-name{font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.list-row .li-sub{font-size:11.5px; color:var(--text-dim);}
+.empty-note{text-align:center; color:var(--text-dim); font-size:13px; padding:18px 8px;}
+.my-code-box{display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(139,92,246,.12); border:1px dashed var(--accent1); border-radius:14px; padding:12px 14px; margin-bottom:14px;}
+.my-code-box .code{font-size:19px; font-weight:800; letter-spacing:3px; color:var(--accent3);}
+.friends-tabs{display:flex; gap:6px; margin-bottom:4px;}
+.friends-tabs button{flex:1; padding:9px; border:none; border-radius:10px; background:rgba(255,255,255,.04); color:var(--text-dim); font-weight:600; font-size:12.5px; transition:.2s;}
+.friends-tabs button.active{background:linear-gradient(135deg,var(--accent1),var(--accent2)); color:#fff;}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+.recruit-room-card{background:rgba(255,255,255,.045); border:1px solid var(--border); border-radius:16px; padding:14px; display:flex; align-items:center; gap:12px;}
+.recruit-room-card .rc-info{flex:1; min-width:0;}
+.recruit-room-card .rc-code{font-weight:800; letter-spacing:2px; color:var(--accent3); font-size:15px;}
+.recruit-room-card .rc-meta{font-size:12px; color:var(--text-dim); margin-top:2px;}
 @keyframes pop{from{transform:scale(.85); opacity:0;} to{transform:scale(1); opacity:1;}}
 .secret-word-card{
   margin:18px 0; padding:26px 16px; border-radius:18px;
@@ -334,7 +359,13 @@ select{appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='h
   <section id="screen-lobby" class="screen">
     <div class="room-header">
       <div class="small-muted">Halo, <b id="lobby-username" style="color:var(--text)"></b> 👋</div>
-      <button class="btn ghost sm" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button>
+      <div class="top-actions">
+        <button class="btn secondary sm btn-badge-wrap" onclick="openFriendsModal()">
+          <i class="fa-solid fa-user-group"></i> Teman
+          <span class="count-badge" id="invite-badge" style="display:none;">0</span>
+        </button>
+        <button class="btn ghost sm" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button>
+      </div>
     </div>
     <div class="center-wrap">
       <div class="card narrow">
@@ -342,7 +373,7 @@ select{appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='h
         <div class="choice-grid cols-3">
           <div class="choice-card" onclick="showCreatePanel()"><i class="fa-solid fa-plus"></i><b>Buat Room</b><div class="small-muted">Jadi host permainan</div></div>
           <div class="choice-card" onclick="showJoinPanel()"><i class="fa-solid fa-right-to-bracket"></i><b>Gabung Room</b><div class="small-muted">Masukkan kode</div></div>
-          <div class="choice-card" onclick="showQuickMatchPanel()"><i class="fa-solid fa-shuffle"></i><b>Main Random</b><div class="small-muted">Matchmaking otomatis</div></div>
+          <div class="choice-card" onclick="showQuickMatchPanel()"><i class="fa-solid fa-magnifying-glass"></i><b>Cari Room</b><div class="small-muted">Room yang sedang merekrut</div></div>
         </div>
 
         <div id="create-panel" style="display:none; margin-top:18px;">
@@ -371,17 +402,9 @@ select{appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='h
 
         <div id="quickmatch-panel" style="display:none; margin-top:18px;">
           <div class="divider"></div>
-          <div id="quickmatch-idle" style="text-align:center;">
-            <i class="fa-solid fa-dice" style="font-size:30px; color:var(--accent3); margin-bottom:8px; display:block;"></i>
-            <p class="small-muted">Sistem akan mencocokkan kamu dengan pemain lain secara otomatis. Room otomatis dibuat &amp; permainan dimulai begitu pemain cukup (min 4 orang).</p>
-            <button class="btn block" onclick="startQuickMatch()"><i class="fa-solid fa-shuffle"></i> Cari Pemain Sekarang</button>
-          </div>
-          <div id="quickmatch-searching" style="display:none; text-align:center;">
-            <div class="spinner" style="margin:8px auto;"></div>
-            <p style="font-weight:600; margin-bottom:2px;">Mencari pemain<span class="waiting-dots"></span></p>
-            <p class="small-muted" id="quickmatch-queue-text">0 pemain dalam antrean (min 4)</p>
-            <button class="btn danger block" onclick="cancelQuickMatch()" style="margin-top:10px;"><i class="fa-solid fa-xmark"></i> Batalkan Pencarian</button>
-          </div>
+          <p class="small-muted" style="text-align:center; margin-top:0;"><i class="fa-solid fa-circle-info"></i> Daftar room yang hostnya sedang membuka rekrutmen pemain baru, diperbarui otomatis.</p>
+          <div id="recruit-list" class="list-scroll"></div>
+          <div id="recruit-empty" class="empty-note" style="display:none;"><i class="fa-solid fa-ghost" style="font-size:22px; display:block; margin-bottom:6px;"></i>Belum ada room yang sedang merekrut. Coba buat room sendiri &amp; nyalakan "Rekrut Pemain"!</div>
           <div class="error-msg" id="quickmatch-error"></div>
         </div>
       </div>
@@ -401,7 +424,9 @@ select{appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='h
       </div>
       <div class="top-actions">
         <span class="chip" id="room-quickmatch-chip" style="display:none;"><i class="fa-solid fa-shuffle"></i> Quick Match</span>
+        <span class="chip" id="room-recruit-chip" style="display:none; color:var(--good);"><i class="fa-solid fa-bullhorn"></i> Merekrut</span>
         <span class="chip"><i class="fa-solid fa-users"></i> <span id="room-player-count">0</span>/<span id="room-max-count">12</span></span>
+        <button class="btn secondary sm" onclick="openInviteFriendModal()"><i class="fa-solid fa-user-plus"></i> Undang</button>
         <button class="btn danger sm" onclick="leaveRoomFlow()"><i class="fa-solid fa-door-closed"></i> Keluar</button>
       </div>
     </div>
@@ -424,6 +449,10 @@ select{appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='h
         <div class="switch-row">
           <div><b style="font-size:14px;">Mode Blank Card</b><div class="small-muted">Spy tidak dapat kata sama sekali</div></div>
           <label class="switch"><input type="checkbox" id="room-blank" onchange="hostUpdateSetting()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-row">
+          <div><b style="font-size:14px;">Rekrut Pemain</b><div class="small-muted">Tampilkan room ini di "Cari Room" agar pemain umum bisa gabung</div></div>
+          <label class="switch"><input type="checkbox" id="room-recruit" onchange="hostToggleRecruit()"><span class="slider"></span></label>
         </div>
         <button class="btn block" id="btn-start-game" onclick="hostStartGame()" style="margin-top:12px;"><i class="fa-solid fa-play"></i> Mulai Permainan</button>
         <div class="small-muted" style="text-align:center; margin-top:8px;">Minimal 4 pemain untuk memulai</div>
@@ -538,6 +567,61 @@ select{appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='h
   </div>
 </div>
 
+<!-- ============================================================ MODAL TEMAN ============================================================ -->
+<div class="modal-overlay" id="modal-friends">
+  <div class="card modal-card wide">
+    <div class="room-header" style="margin-bottom:12px;">
+      <div style="font-weight:800; font-size:17px;"><i class="fa-solid fa-user-group"></i> Teman</div>
+      <button class="btn ghost sm" onclick="closeFriendsModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="my-code-box">
+      <div>
+        <div class="small-muted" style="font-size:11px;">KODE TEMAN SAYA</div>
+        <div class="code" id="my-friend-code">------</div>
+      </div>
+      <button class="btn secondary sm" onclick="copyMyFriendCode()"><i class="fa-solid fa-copy"></i> Salin</button>
+    </div>
+
+    <div class="friends-tabs">
+      <button id="ftab-friends" class="active" onclick="switchFriendsTab('friends')"><i class="fa-solid fa-users"></i> Teman</button>
+      <button id="ftab-add" onclick="switchFriendsTab('add')"><i class="fa-solid fa-user-plus"></i> Tambah</button>
+      <button id="ftab-invites" onclick="switchFriendsTab('invites')"><i class="fa-solid fa-envelope"></i> Undangan</button>
+    </div>
+
+    <div id="fpane-friends" class="tab-pane active">
+      <div id="friends-list" class="list-scroll"></div>
+      <div id="friends-empty" class="empty-note" style="display:none;">Belum ada teman. Tambahkan lewat tab "Tambah" ya!</div>
+    </div>
+
+    <div id="fpane-add" class="tab-pane">
+      <div class="field" style="margin-top:12px;">
+        <label>Kode Teman</label>
+        <div class="input-icon-wrap"><i class="fa-solid fa-hashtag"></i><input type="text" id="add-friend-code" class="input" placeholder="Contoh: AB12CD" maxlength="6" style="text-transform:uppercase; letter-spacing:3px; font-weight:700;"></div>
+      </div>
+      <button class="btn block" onclick="addFriendByCode()"><i class="fa-solid fa-user-plus"></i> Tambahkan Teman</button>
+      <div class="error-msg" id="add-friend-error"></div>
+    </div>
+
+    <div id="fpane-invites" class="tab-pane">
+      <div id="invites-list" class="list-scroll"></div>
+      <div id="invites-empty" class="empty-note" style="display:none;">Tidak ada undangan room saat ini.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ MODAL UNDANG TEMAN KE ROOM ============================================================ -->
+<div class="modal-overlay" id="modal-invite-friend">
+  <div class="card modal-card wide">
+    <div class="room-header" style="margin-bottom:12px;">
+      <div style="font-weight:800; font-size:17px;"><i class="fa-solid fa-paper-plane"></i> Undang Teman ke Room</div>
+      <button class="btn ghost sm" onclick="closeInviteFriendModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="invite-friend-list" class="list-scroll"></div>
+    <div id="invite-friend-empty" class="empty-note" style="display:none;">Kamu belum punya teman. Tambahkan teman dulu lewat menu "Teman" di lobby.</div>
+  </div>
+</div>
+
 <script type="module">
 /* =====================================================================================================
    WHO'S THE SPY — LOGIC (Firebase v10 modular: Auth + Firestore + Realtime Database)
@@ -557,7 +641,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot,
-  serverTimestamp, deleteField, collection, runTransaction
+  serverTimestamp, deleteField, collection, runTransaction,
+  query, where, addDoc, getDocs, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getDatabase, ref, set, onValue, onDisconnect, remove, get, serverTimestamp as rtdbServerTimestamp
@@ -629,10 +714,15 @@ let wordModalShownForRound = -1;
 let audioCtx = null;
 let quickMatchAutoStartedForRoom = null; // simpan roomCode yg sudah dieksekusi auto-start (cegah trigger dobel)
 
-/* --- state khusus matchmaking (mencari lawan acak) --- */
-let unsubMmQueue = null;    // listener dokumen antrean global (untuk teks "X pemain mengantre")
-let unsubMmAssign = null;   // listener dokumen penugasan room untuk uid kita sendiri
-let inQuickMatchQueue = false;
+/* --- state khusus teman & undangan room --- */
+let currentUserCode = "";     // kode unik 6 karakter milik user, dipakai teman lain utk add friend
+let unsubFriends = null;      // listener subcollection users/{uid}/friends
+let unsubInvites = null;      // listener subcollection users/{uid}/invites (undangan room)
+let friendsCache = {};        // {friendUid: {name, code}}
+let invitesCache = {};        // {inviteId: {fromUid, fromName, roomCode, ts}}
+
+/* --- state khusus browser room "sedang merekrut" (menggantikan antrean matchmaking lama) --- */
+let unsubRecruitRooms = null;
 
 /* ======================= UTIL: TOAST & LOADING ======================= */
 function showToast(msg, type="info", icon="circle-info"){
@@ -737,15 +827,19 @@ function translateAuthError(code){
   return map[code] || ("Terjadi kesalahan: " + code);
 }
 
-onAuthStateChanged(auth, (user)=>{
+onAuthStateChanged(auth, async (user)=>{
   if(user){
     currentUser = user;
     currentUserName = user.displayName || (user.email ? user.email.split("@")[0] : "Pemain");
     document.getElementById("lobby-username").textContent = currentUserName;
     populateCategorySelect(document.getElementById("create-category"));
     showScreen("screen-lobby");
+    await ensureUserProfile();
+    listenFriends();
+    listenInvites();
   }else{
     currentUser = null;
+    stopFriendsAndInvitesListeners();
     showScreen("screen-auth");
   }
 });
@@ -762,16 +856,19 @@ window.showCreatePanel = function(){
   document.getElementById("create-panel").style.display = "block";
   document.getElementById("join-panel").style.display = "none";
   document.getElementById("quickmatch-panel").style.display = "none";
+  stopRecruitingListener();
 };
 window.showJoinPanel = function(){
   document.getElementById("join-panel").style.display = "block";
   document.getElementById("create-panel").style.display = "none";
   document.getElementById("quickmatch-panel").style.display = "none";
+  stopRecruitingListener();
 };
 window.showQuickMatchPanel = function(){
   document.getElementById("quickmatch-panel").style.display = "block";
   document.getElementById("create-panel").style.display = "none";
   document.getElementById("join-panel").style.display = "none";
+  listenRecruitingRooms();
 };
 
 /* ======================= UTIL: KODE ROOM ACAK 6 KARAKTER ======================= */
@@ -789,6 +886,239 @@ async function generateUniqueRoomCode(){
   }
   throw new Error("Gagal membuat kode unik, coba lagi.");
 }
+
+/* ======================================================================================
+   SISTEM TEMAN & UNDANGAN ROOM
+   Konsep data:
+   - users/{uid} -> { name, code, createdAt }  (profil publik ringkas per pengguna)
+   - usercodes/{code} -> { uid }               (index pembalik: kode -> uid, utk pencarian cepat)
+   - users/{uid}/friends/{friendUid} -> { name, code, addedAt }  (subcollection privat per user)
+   - users/{uid}/invites/{autoId} -> { fromUid, fromName, roomCode, ts } (undangan room masuk)
+   ====================================================================================== */
+function generateUserCode(){
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = "";
+  for(let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+async function generateUniqueUserCode(){
+  for(let attempt=0; attempt<8; attempt++){
+    const code = generateUserCode();
+    const snap = await getDoc(doc(db,"usercodes",code));
+    if(!snap.exists()) return code;
+  }
+  throw new Error("Gagal membuat kode teman unik, coba lagi.");
+}
+
+async function ensureUserProfile(){
+  try{
+    const uref = doc(db,"users",currentUser.uid);
+    const snap = await getDoc(uref);
+    if(snap.exists() && snap.data().code){
+      currentUserCode = snap.data().code;
+      // pastikan nama tersinkron jika pernah berubah
+      if(snap.data().name !== currentUserName){
+        await updateDoc(uref, { name: currentUserName });
+      }
+    }else{
+      const code = await generateUniqueUserCode();
+      await setDoc(uref, { name: currentUserName, code, createdAt: serverTimestamp() });
+      await setDoc(doc(db,"usercodes",code), { uid: currentUser.uid });
+      currentUserCode = code;
+    }
+    const codeEl = document.getElementById("my-friend-code");
+    if(codeEl) codeEl.textContent = currentUserCode;
+  }catch(e){ console.error("ensureUserProfile error", e); }
+}
+
+window.copyMyFriendCode = function(){
+  navigator.clipboard?.writeText(currentUserCode||"").then(()=>showToast("Kode teman disalin!","success","copy"));
+};
+
+/* ---------------- LISTENER: DAFTAR TEMAN & UNDANGAN ---------------- */
+function listenFriends(){
+  if(unsubFriends) unsubFriends();
+  unsubFriends = onSnapshot(collection(db,"users",currentUser.uid,"friends"), (snap)=>{
+    friendsCache = {};
+    snap.forEach(d=>{ friendsCache[d.id] = d.data(); });
+    renderFriendsList();
+    renderInviteFriendList();
+  }, (err)=>console.error("listenFriends error", err));
+}
+function listenInvites(){
+  if(unsubInvites) unsubInvites();
+  unsubInvites = onSnapshot(collection(db,"users",currentUser.uid,"invites"), (snap)=>{
+    invitesCache = {};
+    snap.forEach(d=>{ invitesCache[d.id] = d.data(); });
+    renderInvitesList();
+    const count = Object.keys(invitesCache).length;
+    const badge = document.getElementById("invite-badge");
+    if(badge){ badge.style.display = count>0 ? "flex":"none"; badge.textContent = count; }
+  }, (err)=>console.error("listenInvites error", err));
+}
+function stopFriendsAndInvitesListeners(){
+  if(unsubFriends){ unsubFriends(); unsubFriends=null; }
+  if(unsubInvites){ unsubInvites(); unsubInvites=null; }
+  friendsCache = {}; invitesCache = {};
+}
+
+/* ---------------- MODAL TEMAN: BUKA/TUTUP & TAB ---------------- */
+window.openFriendsModal = function(){
+  document.getElementById("modal-friends").classList.add("active");
+  switchFriendsTab("friends");
+};
+window.closeFriendsModal = function(){ document.getElementById("modal-friends").classList.remove("active"); };
+window.switchFriendsTab = function(tab){
+  ["friends","add","invites"].forEach(t=>{
+    document.getElementById("ftab-"+t).classList.toggle("active", t===tab);
+    document.getElementById("fpane-"+t).classList.toggle("active", t===tab);
+  });
+};
+
+function renderFriendsList(){
+  const list = document.getElementById("friends-list");
+  const empty = document.getElementById("friends-empty");
+  if(!list) return;
+  list.innerHTML = "";
+  const entries = Object.entries(friendsCache);
+  empty.style.display = entries.length===0 ? "block":"none";
+  entries.sort((a,b)=> (a[1].name||"").localeCompare(b[1].name||""));
+  entries.forEach(([uid,f])=>{
+    const row = document.createElement("div");
+    row.className = "list-row";
+    const initials = (f.name||"?").trim().slice(0,2).toUpperCase();
+    row.innerHTML = `
+      <div class="avatar">${initials}</div>
+      <div class="li-info">
+        <div class="li-name">${escapeHtml(f.name||"Pemain")}</div>
+        <div class="li-sub">Kode: ${escapeHtml(f.code||"------")}</div>
+      </div>`;
+    list.appendChild(row);
+  });
+}
+
+/* ---------------- TAMBAH TEMAN VIA KODE ---------------- */
+window.addFriendByCode = async function(){
+  const errEl = document.getElementById("add-friend-error");
+  errEl.textContent = "";
+  const codeInput = document.getElementById("add-friend-code");
+  const code = codeInput.value.trim().toUpperCase();
+  if(code.length !== 6){ errEl.textContent = "Kode teman harus 6 karakter."; return; }
+  if(code === currentUserCode){ errEl.textContent = "Tidak bisa menambahkan diri sendiri."; return; }
+  setLoading(true);
+  try{
+    const idxSnap = await getDoc(doc(db,"usercodes",code));
+    if(!idxSnap.exists()) throw new Error("Kode teman tidak ditemukan.");
+    const friendUid = idxSnap.data().uid;
+    if(friendsCache[friendUid]){ throw new Error("Kalian sudah berteman."); }
+    const friendProfileSnap = await getDoc(doc(db,"users",friendUid));
+    if(!friendProfileSnap.exists()) throw new Error("Profil teman tidak ditemukan.");
+    const friendData = friendProfileSnap.data();
+
+    const batch = writeBatch(db);
+    batch.set(doc(db,"users",currentUser.uid,"friends",friendUid), {
+      name: friendData.name || "Pemain", code, addedAt: serverTimestamp()
+    });
+    batch.set(doc(db,"users",friendUid,"friends",currentUser.uid), {
+      name: currentUserName, code: currentUserCode, addedAt: serverTimestamp()
+    });
+    await batch.commit();
+
+    codeInput.value = "";
+    showToast(`${friendData.name||"Teman"} berhasil ditambahkan!`,"success","user-check");
+    switchFriendsTab("friends");
+  }catch(e){
+    console.error(e);
+    errEl.textContent = e.message || "Gagal menambahkan teman.";
+  }
+  setLoading(false);
+};
+
+/* ---------------- UNDANGAN ROOM: RENDER, TERIMA, TOLAK ---------------- */
+function renderInvitesList(){
+  const list = document.getElementById("invites-list");
+  const empty = document.getElementById("invites-empty");
+  if(!list) return;
+  list.innerHTML = "";
+  const entries = Object.entries(invitesCache);
+  empty.style.display = entries.length===0 ? "block":"none";
+  entries.sort((a,b)=> (b[1].ts||0)-(a[1].ts||0));
+  entries.forEach(([id,inv])=>{
+    const row = document.createElement("div");
+    row.className = "list-row";
+    const initials = (inv.fromName||"?").trim().slice(0,2).toUpperCase();
+    row.innerHTML = `
+      <div class="avatar">${initials}</div>
+      <div class="li-info">
+        <div class="li-name">${escapeHtml(inv.fromName||"Teman")} mengundangmu</div>
+        <div class="li-sub">Room ${escapeHtml(inv.roomCode||"------")}</div>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn sm" onclick="acceptInvite('${id}','${inv.roomCode}')"><i class="fa-solid fa-check"></i></button>
+        <button class="btn danger sm" onclick="declineInvite('${id}')"><i class="fa-solid fa-xmark"></i></button>
+      </div>`;
+    list.appendChild(row);
+  });
+}
+window.acceptInvite = async function(inviteId, roomCode){
+  setLoading(true);
+  try{
+    await deleteDoc(doc(db,"users",currentUser.uid,"invites",inviteId));
+    closeFriendsModal();
+    await joinRoomByCode(roomCode);
+  }catch(e){
+    console.error(e);
+    showToast(e.message || "Gagal bergabung ke room undangan.","error");
+  }
+  setLoading(false);
+};
+window.declineInvite = async function(inviteId){
+  try{ await deleteDoc(doc(db,"users",currentUser.uid,"invites",inviteId)); }catch(e){ console.error(e); }
+};
+
+/* ---------------- UNDANG TEMAN KE ROOM SAAT INI ---------------- */
+window.openInviteFriendModal = function(){
+  renderInviteFriendList();
+  document.getElementById("modal-invite-friend").classList.add("active");
+};
+window.closeInviteFriendModal = function(){ document.getElementById("modal-invite-friend").classList.remove("active"); };
+
+function renderInviteFriendList(){
+  const list = document.getElementById("invite-friend-list");
+  const empty = document.getElementById("invite-friend-empty");
+  if(!list) return;
+  list.innerHTML = "";
+  const entries = Object.entries(friendsCache);
+  empty.style.display = entries.length===0 ? "block":"none";
+  const playersInRoom = (roomData && roomData.players) ? roomData.players : {};
+  entries.sort((a,b)=> (a[1].name||"").localeCompare(b[1].name||""));
+  entries.forEach(([uid,f])=>{
+    const row = document.createElement("div");
+    row.className = "list-row";
+    const initials = (f.name||"?").trim().slice(0,2).toUpperCase();
+    const alreadyIn = !!playersInRoom[uid];
+    row.innerHTML = `
+      <div class="avatar">${initials}</div>
+      <div class="li-info">
+        <div class="li-name">${escapeHtml(f.name||"Pemain")}</div>
+        <div class="li-sub">${alreadyIn ? "Sudah di room ini" : "Kode: "+escapeHtml(f.code||"")}</div>
+      </div>
+      <button class="btn sm" ${alreadyIn?"disabled":""} onclick="sendRoomInvite('${uid}')"><i class="fa-solid fa-paper-plane"></i> Undang</button>`;
+    list.appendChild(row);
+  });
+}
+window.sendRoomInvite = async function(friendUid){
+  if(!currentRoomCode) return;
+  try{
+    await addDoc(collection(db,"users",friendUid,"invites"), {
+      fromUid: currentUser.uid, fromName: currentUserName, roomCode: currentRoomCode, ts: Date.now()
+    });
+    showToast("Undangan terkirim!","success","paper-plane");
+  }catch(e){
+    console.error(e);
+    showToast("Gagal mengirim undangan.","error");
+  }
+};
 
 /* ======================= BUAT ROOM ======================= */
 window.createRoomFlow = async function(){
@@ -814,6 +1144,7 @@ window.createRoomFlow = async function(){
       roundHistory: [], votes: {}, spyId: null,
       timerEndAt: null, timerDuration: 0, phase: "lobby",
       lastVotedUid: null, winner: null, winnerReason: "",
+      isRecruiting: false,
       createdAt: serverTimestamp(), updatedAt: serverTimestamp()
     });
     await enterRoom(code);
@@ -824,7 +1155,25 @@ window.createRoomFlow = async function(){
   setLoading(false);
 };
 
-/* ======================= GABUNG ROOM ======================= */
+/* ======================= GABUNG ROOM (logika inti dipakai ulang oleh form gabung, browser rekrutmen, & undangan teman) ======================= */
+async function joinRoomByCode(code){
+  const roomRef = doc(db,"rooms",code);
+  // Gunakan transaksi supaya penambahan pemain aman dari race-condition (anti-cheat sederhana: validasi kapasitas & status di server-side transaction)
+  await runTransaction(db, async (tx)=>{
+    const snap = await tx.get(roomRef);
+    if(!snap.exists()) throw new Error("Room tidak ditemukan. Periksa kembali kode room.");
+    const data = snap.data();
+    if(data.status !== "lobby") throw new Error("Permainan di room ini sudah dimulai.");
+    const players = data.players || {};
+    if(players[currentUser.uid]) return; // sudah join sebelumnya, lanjut saja
+    const count = Object.keys(players).length;
+    if(count >= (data.maxPlayers||MAX_PLAYERS)) throw new Error("Room sudah penuh.");
+    players[currentUser.uid] = { name: currentUserName, isHost:false, online:true, joinedAt: Date.now() };
+    tx.update(roomRef, { players, updatedAt: serverTimestamp() });
+  });
+  await enterRoom(code);
+}
+
 window.joinRoomFlow = async function(){
   const errEl = document.getElementById("join-error");
   errEl.textContent = "";
@@ -832,21 +1181,7 @@ window.joinRoomFlow = async function(){
   if(code.length !== 6){ errEl.textContent = "Kode room harus 6 karakter."; return; }
   setLoading(true);
   try{
-    const roomRef = doc(db,"rooms",code);
-    // Gunakan transaksi supaya penambahan pemain aman dari race-condition (anti-cheat sederhana: validasi kapasitas & status di server-side transaction)
-    await runTransaction(db, async (tx)=>{
-      const snap = await tx.get(roomRef);
-      if(!snap.exists()) throw new Error("Room tidak ditemukan. Periksa kembali kode room.");
-      const data = snap.data();
-      if(data.status !== "lobby") throw new Error("Permainan di room ini sudah dimulai.");
-      const players = data.players || {};
-      if(players[currentUser.uid]) return; // sudah join sebelumnya, lanjut saja
-      const count = Object.keys(players).length;
-      if(count >= (data.maxPlayers||MAX_PLAYERS)) throw new Error("Room sudah penuh.");
-      players[currentUser.uid] = { name: currentUserName, isHost:false, online:true, joinedAt: Date.now() };
-      tx.update(roomRef, { players, updatedAt: serverTimestamp() });
-    });
-    await enterRoom(code);
+    await joinRoomByCode(code);
   }catch(e){
     console.error(e);
     errEl.textContent = e.message || "Gagal bergabung ke room.";
@@ -854,151 +1189,81 @@ window.joinRoomFlow = async function(){
   setLoading(false);
 };
 
-/* ======================= MATCHMAKING: MAIN DENGAN PEMAIN ACAK =======================
-   Konsep:
-   - Ada 1 dokumen antrean global: matchmaking/global -> { players: { uid: {name, joinedAt} } }
-   - Saat jumlah pemain di antrean (yang masih "segar", belum kedaluwarsa) mencapai
-     MIN_PLAYERS, salah satu transaksi yang berhasil commit akan:
-       1) membuat room baru berisi semua pemain yang ada di antrean saat itu
-        (dibatasi maksimal MAX_PLAYERS, sisanya tetap di antrean utk dicocokkan lagi),
-       2) menuliskan "surat tugas" ke koleksi matchmakingAssignments/{uid} utk tiap
-          pemain yang berhasil dicocokkan, berisi kode room barunya.
-   - Semua client yang sedang menunggu mendengarkan dokumen matchmakingAssignments/{uid}
-     miliknya sendiri sehingga begitu ada penugasan, mereka otomatis pindah ke room itu.
-   - Room hasil matchmaking ditandai isQuickMatch:true dan punya matchStartAt supaya
-     permainan otomatis dimulai setelah jeda singkat (lihat gameTick), tidak perlu
-     menunggu ada yang menekan tombol "Mulai" secara manual.
-   - Antrean juga menyimpan kategori terpisah dari kategori room; untuk mempercepat
-     pencocokan (agar pemain tidak terpecah ke 11 antrean berbeda), semua pemain quick
-     match digabung dalam SATU antrean dan kategori kata room-nya diacak ("Acak"). ======================= */
-
-window.startQuickMatch = async function(){
+/* ======================= GABUNG DARI DAFTAR ROOM MEREKRUT ======================= */
+window.joinRecruitingRoom = async function(code){
   const errEl = document.getElementById("quickmatch-error");
   errEl.textContent = "";
-  document.getElementById("quickmatch-idle").style.display = "none";
-  document.getElementById("quickmatch-searching").style.display = "block";
-  inQuickMatchQueue = true;
-
-  try{
-    const precomputedCode = await generateUniqueRoomCode(); // disiapkan lebih dulu, dipakai HANYA jika transaksi ini yg membuat room
-    const mmRef = doc(db,"matchmaking","global");
-
-    await runTransaction(db, async (tx)=>{
-      const snap = await tx.get(mmRef);
-      const now = Date.now();
-      const rawPlayers = snap.exists() ? (snap.data().players||{}) : {};
-
-      // buang entri antrean yang sudah kedaluwarsa (dianggap ditinggalkan / tab ditutup)
-      const players = {};
-      Object.entries(rawPlayers).forEach(([uid,p])=>{
-        if(now - (p.joinedAt||0) < QUICKMATCH_STALE_MS) players[uid] = p;
-      });
-
-      if(!players[currentUser.uid]){
-        players[currentUser.uid] = { name: currentUserName, joinedAt: now };
-      }
-
-      const sortedUids = Object.keys(players).sort((a,b)=> players[a].joinedAt - players[b].joinedAt);
-
-      if(sortedUids.length >= MIN_PLAYERS){
-        const chosen = sortedUids.slice(0, MAX_PLAYERS);
-        const leftover = sortedUids.slice(MAX_PLAYERS);
-
-        const roomPlayers = {};
-        chosen.forEach((uid,idx)=>{
-          roomPlayers[uid] = { name: players[uid].name, isHost: idx===0, online:true, joinedAt: Date.now() };
-        });
-
-        const roomRef = doc(db,"rooms",precomputedCode);
-        tx.set(roomRef, {
-          code: precomputedCode,
-          hostId: chosen[0],
-          status:"lobby", category:"Acak", blankMode:false,
-          minPlayers: MIN_PLAYERS, maxPlayers: MAX_PLAYERS,
-          players: roomPlayers,
-          isQuickMatch: true,
-          matchStartAt: Date.now() + QUICKMATCH_GRACE_MS,
-          round:0, turnOrder:[], currentTurnIndex:0, roundHistory:[], votes:{}, spyId:null,
-          timerEndAt:null, timerDuration:0, phase:"lobby", lastVotedUid:null, winner:null, winnerReason:"",
-          createdAt: serverTimestamp(), updatedAt: serverTimestamp()
-        });
-
-        // beri "surat tugas" ke tiap pemain yang terpilih supaya client masing2 tahu harus pindah ke room mana
-        chosen.forEach(uid=>{
-          tx.set(doc(db,"matchmakingAssignments",uid), { roomCode: precomputedCode, ts: Date.now() });
-        });
-
-        const remainingPlayers = {};
-        leftover.forEach(uid=>{ remainingPlayers[uid] = players[uid]; });
-        tx.set(mmRef, { players: remainingPlayers, updatedAt: serverTimestamp() });
-      }else{
-        tx.set(mmRef, { players, updatedAt: serverTimestamp() });
-      }
-    });
-
-    listenMatchmaking();
-  }catch(e){
-    console.error(e);
-    errEl.textContent = "Gagal mencari pemain: " + (e.message||e.code||"unknown error");
-    document.getElementById("quickmatch-idle").style.display = "block";
-    document.getElementById("quickmatch-searching").style.display = "none";
-    inQuickMatchQueue = false;
-  }
-};
-
-function listenMatchmaking(){
-  stopMatchmakingListeners();
-
-  // Dengarkan surat tugas milik kita sendiri -> begitu ada, langsung masuk ke room tsb
-  unsubMmAssign = onSnapshot(doc(db,"matchmakingAssignments",currentUser.uid), async (snap)=>{
-    if(snap.exists() && snap.data().roomCode){
-      const code = snap.data().roomCode;
-      try{ await deleteDoc(doc(db,"matchmakingAssignments",currentUser.uid)); }catch(e){}
-      stopMatchmakingListeners();
-      inQuickMatchQueue = false;
-      showToast("Pemain ditemukan! Bergabung ke room...","success","people-group");
-      await enterRoom(code);
-    }
-  });
-
-  // Dengarkan jumlah antrean untuk teks "X pemain mengantre"
-  unsubMmQueue = onSnapshot(doc(db,"matchmaking","global"), (snap)=>{
-    const players = snap.exists() ? (snap.data().players||{}) : {};
-    const now = Date.now();
-    const freshCount = Object.values(players).filter(p=> now-(p.joinedAt||0) < QUICKMATCH_STALE_MS).length;
-    const el = document.getElementById("quickmatch-queue-text");
-    if(el) el.textContent = `${freshCount} pemain dalam antrean (min ${MIN_PLAYERS})`;
-  });
-}
-
-function stopMatchmakingListeners(){
-  if(unsubMmAssign){ unsubMmAssign(); unsubMmAssign=null; }
-  if(unsubMmQueue){ unsubMmQueue(); unsubMmQueue=null; }
-}
-
-window.cancelQuickMatch = async function(){
   setLoading(true);
   try{
-    await runTransaction(db, async (tx)=>{
-      const mmRef = doc(db,"matchmaking","global");
-      const snap = await tx.get(mmRef);
-      if(!snap.exists()) return;
-      const players = { ...(snap.data().players||{}) };
-      delete players[currentUser.uid];
-      tx.set(mmRef, { players, updatedAt: serverTimestamp() });
-    });
-  }catch(e){ console.error(e); }
-  stopMatchmakingListeners();
-  inQuickMatchQueue = false;
-  document.getElementById("quickmatch-idle").style.display = "block";
-  document.getElementById("quickmatch-searching").style.display = "none";
+    await joinRoomByCode(code);
+  }catch(e){
+    console.error(e);
+    errEl.textContent = e.message || "Gagal bergabung ke room.";
+    showToast(e.message || "Gagal bergabung ke room.","error");
+  }
   setLoading(false);
 };
 
+/* ======================= CARI ROOM: BROWSER ROOM YANG SEDANG MEREKRUT =======================
+   Menggantikan sistem antrean matchmaking lama. Sekarang "Cari Room" hanya menampilkan daftar
+   room lobby yang isRecruiting:true secara realtime (query Firestore equality, tanpa index
+   komposit tambahan). Pemain memilih room yang mana saja utk digabungi lewat joinRoomByCode(). ======================= */
+
+function listenRecruitingRooms(){
+  stopRecruitingListener();
+  const q = query(collection(db,"rooms"), where("isRecruiting","==",true), where("status","==","lobby"));
+  unsubRecruitRooms = onSnapshot(q, (snap)=>{
+    const rooms = [];
+    snap.forEach(d=> rooms.push({ code: d.id, ...d.data() }));
+    renderRecruitingRooms(rooms);
+  }, (err)=>{
+    console.error("listenRecruitingRooms error", err);
+  });
+}
+function stopRecruitingListener(){
+  if(unsubRecruitRooms){ unsubRecruitRooms(); unsubRecruitRooms=null; }
+}
+
+function renderRecruitingRooms(rooms){
+  const list = document.getElementById("recruit-list");
+  const empty = document.getElementById("recruit-empty");
+  if(!list) return;
+  list.innerHTML = "";
+  const openRooms = rooms.filter(r=> Object.keys(r.players||{}).length < (r.maxPlayers||MAX_PLAYERS));
+  empty.style.display = openRooms.length===0 ? "block":"none";
+  openRooms.sort((a,b)=> (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+  openRooms.forEach(r=>{
+    const hostName = (r.players && r.players[r.hostId]) ? r.players[r.hostId].name : "Host";
+    const count = Object.keys(r.players||{}).length;
+    const card = document.createElement("div");
+    card.className = "recruit-room-card";
+    card.innerHTML = `
+      <i class="fa-solid fa-door-open" style="font-size:20px; color:var(--accent3);"></i>
+      <div class="rc-info">
+        <div class="rc-code">${escapeHtml(r.code)}</div>
+        <div class="rc-meta"><i class="fa-solid fa-crown"></i> ${escapeHtml(hostName||"Host")} &nbsp;•&nbsp; <i class="fa-solid fa-users"></i> ${count}/${r.maxPlayers||MAX_PLAYERS} &nbsp;•&nbsp; ${escapeHtml(r.category||"Acak")}</div>
+      </div>
+      <button class="btn sm" onclick="joinRecruitingRoom('${r.code}')"><i class="fa-solid fa-right-to-bracket"></i> Gabung</button>`;
+    list.appendChild(card);
+  });
+}
+
+/* ---------------- HOST: BUKA/TUTUP REKRUTMEN ROOM ---------------- */
+window.hostToggleRecruit = async function(){
+  if(!isHost || !roomData || roomData.status!=="lobby") return;
+  const isRecruiting = document.getElementById("room-recruit").checked;
+  try{
+    await updateDoc(doc(db,"rooms",currentRoomCode), { isRecruiting, updatedAt: serverTimestamp() });
+  }catch(e){
+    console.error(e);
+    showToast("Gagal mengubah status rekrutmen.","error");
+  }
+};
+
+
 /* ======================= MASUK KE ROOM (setup listener + presence) ======================= */
 async function enterRoom(code){
-  stopMatchmakingListeners(); // pastikan tidak ada listener antrean tersisa saat sudah masuk room
-  inQuickMatchQueue = false;
+  stopRecruitingListener(); // pastikan tidak ada listener browser rekrutmen tersisa saat sudah masuk room
   quickMatchAutoStartedForRoom = null;
   currentRoomCode = code;
   setupPresence(code);
@@ -1131,6 +1396,7 @@ function renderLobbyRoom(){
   document.getElementById("host-controls").style.display = isHost ? "block":"none";
   document.getElementById("guest-waiting").style.display = isHost ? "none":"block";
   document.getElementById("room-quickmatch-chip").style.display = roomData.isQuickMatch ? "inline-flex":"none";
+  document.getElementById("room-recruit-chip").style.display = roomData.isRecruiting ? "inline-flex":"none";
   document.getElementById("quickmatch-countdown-wrap").style.display = roomData.isQuickMatch ? "block":"none";
   document.getElementById("guest-waiting").innerHTML = roomData.isQuickMatch
     ? '<i class="fa-solid fa-hourglass-half"></i> Permainan akan mulai otomatis<span class="waiting-dots"></span>'
@@ -1141,6 +1407,7 @@ function renderLobbyRoom(){
     if(catSel.options.length === 0) populateCategorySelect(catSel);
     catSel.value = roomData.category;
     document.getElementById("room-blank").checked = !!roomData.blankMode;
+    document.getElementById("room-recruit").checked = !!roomData.isRecruiting;
     const count = Object.keys(players).length;
     const btn = document.getElementById("btn-start-game");
     btn.disabled = count < MIN_PLAYERS;
@@ -1148,6 +1415,8 @@ function renderLobbyRoom(){
       ? `<i class="fa-solid fa-play"></i> Minimal ${MIN_PLAYERS} pemain (${count}/${MIN_PLAYERS})`
       : `<i class="fa-solid fa-play"></i> Mulai Permainan (${count} pemain)`;
   }
+  // refresh daftar teman yang bisa diundang setiap render (status "sudah di room" bisa berubah)
+  renderInviteFriendList();
 }
 
 function buildPlayerCard(uid, p, opts={}){
@@ -1230,6 +1499,7 @@ async function startNewRound(uids){
     winner: null, winnerReason: "",
     wordCivilian: civilian, wordSpyReveal: roomData.blankMode ? "(Blank Card)" : spy,
     categoryUsed: usedCategory,
+    isRecruiting: false,
     timerEndAt: endAt, timerDuration: CLUE_TURN_SECONDS,
     updatedAt: serverTimestamp()
   });
@@ -1667,7 +1937,8 @@ function backToLobbyLocal(){
 
 async function cleanupBeforeLeaveApp(){
   if(currentRoomCode) await leaveCurrentRoom();
-  if(inQuickMatchQueue) await cancelQuickMatch();
+  stopRecruitingListener();
+  stopFriendsAndInvitesListeners();
 }
 window.addEventListener("beforeunload", ()=>{
   // best-effort; onDisconnect() di RTDB adalah jaminan utama saat koneksi terputus paksa
@@ -1709,15 +1980,31 @@ service cloud.firestore {
       }
     }
 
-    // Antrean matchmaking global (fitur "Main Random")
-    match /matchmaking/{docId} {
-      allow read, write: if request.auth != null;
+    // Profil ringkas tiap pengguna (nama & kode teman)
+    match /users/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid;
+
+      // Daftar teman privat milik masing-masing pengguna
+      match /friends/{friendUid} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        // ditulis oleh KEDUA sisi pertemanan saat addFriendByCode() -> dibatasi hanya uid pemilik atau teman yg baru ditambahkan
+        allow write: if request.auth != null && (request.auth.uid == uid || request.auth.uid == friendUid);
+      }
+
+      // Undangan room masuk milik pengguna ini
+      match /invites/{inviteId} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create: if request.auth != null; // teman lain yang mengundang
+        allow update: if false;
+      }
     }
-    match /matchmakingAssignments/{uid} {
-      // hanya pemilik uid yg boleh membaca "surat tugas" room miliknya sendiri
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if request.auth != null;
-      allow delete: if request.auth != null && request.auth.uid == uid;
+
+    // Index pembalik: kode teman -> uid (dipakai saat menambahkan teman lewat kode)
+    match /usercodes/{code} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
     }
   }
 }
@@ -1746,6 +2033,7 @@ CATATAN KEAMANAN:
   2) Validasi giliran & kepemilikan aksi di client sebelum menulis (submitMyClue, castVote, submitSpyGuess).
   3) Transisi fase besar hanya dieksekusi oleh client host (gameTick) untuk mencegah race-condition.
   4) Transaksi Firestore (runTransaction) saat join room untuk mencegah melebihi kapasitas room.
-===================================================================================================== -->
-</body>
-</html>
+  5) "Cari Room" membaca room via query equality (isRecruiting==true, status=="lobby") — tidak perlu
+     index komposit karena hanya filter equality, dan room yang sudah dimulai otomatis hilang dari
+     daftar karena isRecruiting diset false saat startNewRound().
+  6) Sistem teman: kode 6 karakter per pengg
